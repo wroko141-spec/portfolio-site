@@ -268,8 +268,14 @@ const BG = {
   flowerSize: 1,         // размер цветов
   swayAmp: 1,            // амплитуда покачивания (0 - стоят неподвижно)
   swaySpeed: 1,          // скорость покачивания
-  cameraSpeed: 9,        // сколько камера пролетает вперёд за один экран прокрутки
-  idleDrift: 0.1,        // медленный полёт вперёд без прокрутки (0 - выключить)
+  waveAmp: 1,            // высота бегущих по полю волн
+  waveSpeed: 1,          // скорость волн
+  spin: 1,               // вращение цветков вокруг своей оси
+  idleDrift: 0.55,       // постоянный полёт над полем без прокрутки (0 - выключить)
+  cameraSpeed: 7,        // сколько камера пролетает вперёд за один экран прокрутки
+  rise: 5.4,             // насколько поле уходит вверх при прокрутке (0 - остаётся внизу)
+  riseEnd: 1.25,         // за сколько экранов прокрутки поле уходит вверх полностью
+  respectReducedMotion: false, // true - при системной настройке «меньше анимаций» фон застывает
   mouseParallax: 1,      // сила параллакса от мыши
   dimTo: 0.24,           // яркость поля за следующими секциями (1 - не затемнять)
   dimStart: 0.3,         // с какой доли первого экрана начинается затемнение
@@ -281,25 +287,26 @@ const BG = {
 /* ============================ */
 
 const root = document.documentElement, header = document.getElementById('top');
-const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const still = reduced && BG.respectReducedMotion;   // фон застывает только если это разрешено в настройках
 const coarse = matchMedia('(pointer: coarse)').matches;
 const mobile = coarse || innerWidth < 760;
 
 /* --- плавная прокрутка (на тач-экранах остаётся родная) --- */
 let lenis = null;
-if (!still) try {
+if (!reduced) try {
   const Lenis = (await import('https://cdn.jsdelivr.net/npm/lenis@1.1.14/dist/lenis.mjs')).default;
   lenis = new Lenis({ lerp: BG.scrollLerp, smoothWheel: true, syncTouch: false });
 } catch (e) { lenis = null; }
 
 function goTo(el, instant) {
   if (lenis) lenis.scrollTo(el, { offset: -50, immediate: !!instant, duration: 1.2 });
-  else el.scrollIntoView({ behavior: still || instant ? 'auto' : 'smooth' });
+  else el.scrollIntoView({ behavior: reduced || instant ? 'auto' : 'smooth' });
 }
 document.addEventListener('click', e => {
   const a = e.target.closest('a[href^="#"]'); if (!a) return;
   const id = a.getAttribute('href');
-  if (id === '#') { if (a.classList.contains('logo')) { e.preventDefault(); lenis ? lenis.scrollTo(0, { duration: 1.2 }) : scrollTo({ top: 0, behavior: still ? 'auto' : 'smooth' }); } return; }
+  if (id === '#') { if (a.classList.contains('logo')) { e.preventDefault(); lenis ? lenis.scrollTo(0, { duration: 1.2 }) : scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' }); } return; }
   const el = document.querySelector(id); if (!el) return;
   e.preventDefault(); goTo(el);
   history.pushState(null, '', id);
@@ -312,7 +319,7 @@ const VERT = `
 attribute vec3 aPos;    // x, z, фаза
 attribute vec4 aRnd;    // размер, вид цветка, скорость покачивания, высота стебля
 attribute vec3 aTint;
-uniform float uT, uDrift, uSway, uSize, uXS;
+uniform float uT, uDrift, uSway, uSize, uXS, uWave, uWT, uSpin;
 varying vec2 vUv; varying vec3 vTint; varying float vFog, vPart;
 const float Z0 = -36., ZL = 44., XR = 24.;
 void main(){
@@ -320,11 +327,12 @@ void main(){
   float x = aPos.x * uXS, z = mod(aPos.y + uDrift, ZL) + Z0;   // uXS сжимает поле на узких экранах
   float e = aPos.x / XR;
   // рельеф: мягкие холмы + приподнятые края; едет вместе с цветами
-  float yg = sin(x * .42 + aPos.y * .31) * .32 + sin(aPos.y * .5 + 1.7) * .28 + e * e * 2.6;
+  float yg = (sin(x * .42 + aPos.y * .31 + uWT * .7) * .34 + sin(aPos.y * .5 + 1.7 - uWT * .9) * .3
+            + sin(x * .9 - aPos.y * .7 + uWT * 1.3) * .1) * uWave + e * e * 2.6;
   float fade = min(1., (z - Z0) / 6.) * clamp((Z0 + ZL - 2.4 - z) / 3.5, 0., 1.);
   float sc = aRnd.x * uSize * fade;
   float h = part < .5 ? position.y : part < 1.5 ? .34 : part < 2.5 ? .58 : 1.;
-  vec2 sw = vec2(sin(uT * sp + ph), cos(uT * sp * .8 + ph * 1.7)) * uSway * .17 * sc;
+  vec2 sw = vec2(sin(uT * sp * 1.6 + ph), cos(uT * sp * 1.3 + ph * 1.7)) * uSway * .26 * sc;
   vec4 mv = viewMatrix * vec4(x + sw.x * h * h, yg + aRnd.w * sc * h, z + sw.y * h * h, 1.);
   vec2 uvl = uv;
   if (part < .5) {                                   // стебель
@@ -335,9 +343,9 @@ void main(){
     mv.xy += (dir * u * .27 + perp * position.y * .12) * sc;
     uvl = vec2(u, position.y + .5);
   } else {                                           // цветок
-    float a = ph + sin(uT * sp * .7 + ph * 2.3) * .3 * uSway, c = cos(a), s = sin(a);
+    float a = ph + uT * (fract(ph * 7.3) - .5) * 1.1 * uSpin + sin(uT * sp * 1.1 + ph * 2.3) * .35 * uSway, c = cos(a), s = sin(a);
     vec2 q = mat2(c, s, -s, c) * position.xy;
-    q.y *= mix(.72, 1., fract(ph * 3.1));
+    q.y *= mix(.72, 1., .5 + .5 * sin(uT * sp * .9 + ph * 3.1));      // цветок слегка «кивает»
     mv.xy += q * .5 * sc; mv.z += .02;
     uvl = vec2((step(.5, aRnd.y) + uv.x) * .5, uv.y);
   }
@@ -425,7 +433,7 @@ async function createField() {
   geo.setAttribute('aTint', new THREE.InstancedBufferAttribute(aTint, 3));
   geo.instanceCount = N;
   const map = new THREE.CanvasTexture(flowerAtlas()); map.premultiplyAlpha = true; map.anisotropy = 4;
-  const U = { uT: { value: 0 }, uDrift: { value: 0 }, uSway: { value: still ? 0 : BG.swayAmp }, uSize: { value: BG.flowerSize }, uXS: { value: 1 },
+  const U = { uT: { value: 0 }, uDrift: { value: 0 }, uSway: { value: still ? 0 : BG.swayAmp }, uSize: { value: BG.flowerSize }, uXS: { value: 1 }, uWave: { value: BG.waveAmp }, uWT: { value: 0 }, uSpin: { value: BG.spin },
               uDim: { value: 1 }, uMap: { value: map }, uBg: { value: new THREE.Vector3(6 / 255, 7 / 255, 11 / 255) } };
   const mesh = new THREE.Mesh(geo, new THREE.ShaderMaterial({ uniforms: U, vertexShader: VERT, fragmentShader: FRAG, alphaToCoverage: true }));
   mesh.frustumCulled = false; scene.add(mesh);
@@ -455,10 +463,11 @@ async function createField() {
         mx += (tx - mx) * (1 - Math.exp(-dt * 3)); my += (ty - my) * (1 - Math.exp(-dt * 3));
       }
       dirty = false;
-      const s = Math.min(p, 1.5), k = BG.mouseParallax;
-      camera.position.set(mx * .55 * k, 3.0 + s * .5 - my * .18 * k, 6.5);
-      look.set(mx * .2 * k, 2.1 + s * .7, -6); camera.lookAt(look);
-      U.uT.value = t;
+      // прокрутка: камера опускается под поле, и оно плавно уходит вверх, оставаясь фоном
+      const k = BG.mouseParallax, camY = 3.0 - BG.rise * sm(0, BG.riseEnd, p) - my * .18 * k;
+      camera.position.set(mx * .55 * k, camY, 6.5);
+      look.set(mx * .2 * k, camY - .9, -6); camera.lookAt(look);
+      U.uT.value = t; U.uWT.value = t * BG.waveSpeed;
       U.uDrift.value = t * BG.idleDrift + (still ? 0 : p * BG.cameraSpeed);
       U.uDim.value = 1 - (1 - BG.dimTo) * sm(BG.dimStart, BG.dimEnd, p);
       if (count !== countTo) { count += (countTo - count) * Math.min(1, dt * 2); if (Math.abs(count - countTo) < 2) count = countTo; geo.instanceCount = count | 0; }
