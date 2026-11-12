@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Портфолио</title>
-<meta name="description" content="Портфолио: работы, цены, как я работаю.">
+<title>made by veertyy</title>
+<meta name="description" content="Портфолио veertyy: работы и как я работаю.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600&family=Tektur:wght@500;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600&family=Unbounded:wght@500;700;800&display=swap" rel="stylesheet">
 <style>
 :root{
   --bg:#06070b;
@@ -24,7 +24,7 @@ html.lenis,html.lenis body{height:auto}
 .lenis.lenis-stopped{overflow:hidden}
 body{background:var(--bg);color:var(--text);font:400 16px/1.55 Manrope,system-ui,sans-serif;overflow-x:hidden;-webkit-font-smoothing:antialiased}
 a{color:inherit;text-decoration:none}
-h1,h2,h3,.num,.logo{font-family:Tektur,Manrope,sans-serif;font-weight:800;letter-spacing:-.01em;line-height:1}
+h1,h2,h3,.num{font-family:Unbounded,Manrope,sans-serif;font-weight:700;letter-spacing:-.02em;line-height:1.05}
 #field{position:fixed;inset:0;width:100%;height:100%;height:100lvh;z-index:0;pointer-events:none}
 .no-webgl #field{display:none}
 .no-webgl body{background:radial-gradient(120% 70% at 50% 108%,#1a2330 0,#0b0e15 45%,var(--bg) 75%) fixed var(--bg)}
@@ -33,9 +33,8 @@ html:not(.lenis):not(.calm){scroll-behavior:smooth}
 main,header,footer{position:relative;z-index:1}
 
 /* шапка */
-header{position:fixed;top:0;left:0;right:0;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px var(--pad);z-index:10;transition:background .3s}
+header{position:fixed;top:0;left:0;right:0;display:flex;align-items:center;justify-content:flex-end;gap:16px;padding:14px var(--pad);z-index:10;transition:background .3s}
 header.solid{background:rgba(6,7,11,.92);border-bottom:1px solid var(--line)}
-.logo{font-size:15px;font-weight:700}
 nav{display:flex;align-items:center;gap:clamp(12px,2.4vw,32px);font-size:13px;text-transform:uppercase;letter-spacing:.08em}
 nav a.link{color:var(--mute);transition:color .2s}
 nav a.link:hover{color:var(--text)}
@@ -46,8 +45,8 @@ nav a.link:hover{color:var(--text)}
 @media(max-width:640px){nav a.link{display:none}}
 
 /* первый экран */
-.hero{min-height:100svh;display:flex;flex-direction:column;align-items:center;padding:17svh var(--pad) 0;text-align:center}
-.hero h1{font-size:clamp(40px,9.5vw,136px);text-transform:lowercase;text-shadow:0 0 60px rgba(9,9,12,.9)}
+.hero{position:relative;min-height:100svh;display:flex;flex-direction:column;align-items:center;padding:17svh var(--pad) 0;text-align:center}
+.hero h1{font-size:clamp(27px,7.2vw,116px);font-weight:800;text-transform:lowercase;text-shadow:0 0 60px rgba(9,9,12,.9)}
 .hero h1 em{font-style:normal;color:var(--accent)}
 .hero p{margin-top:20px;max-width:440px;color:rgba(241,237,228,.8);text-shadow:0 0 18px #09090c,0 0 6px #09090c;font-size:clamp(14px,1.4vw,17px)}
 .scroll{position:absolute;bottom:28px;left:50%;width:36px;height:36px;margin-left:-18px;border:1px solid var(--line);border-radius:50%;display:grid;place-items:center;color:var(--mute);animation:bob 2s ease-in-out infinite}
@@ -57,51 +56,37 @@ nav a.link:hover{color:var(--text)}
 section{padding:clamp(72px,11vw,150px) var(--pad)}
 .wrap{max-width:1240px;margin:0 auto}
 .head{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap;margin-bottom:clamp(28px,4vw,56px)}
-.head h2{font-size:clamp(32px,6vw,76px);text-transform:lowercase}
+.head h2{font-size:clamp(26px,5vw,64px);text-transform:lowercase}
 .head p{max-width:340px;color:var(--mute);font-size:14px}
 .label{display:block;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin-bottom:14px}
 
 /* работы */
-.chips{display:flex;gap:8px;flex-wrap:wrap}
-.chip{padding:8px 16px;border-radius:999px;border:1px solid var(--line);background:none;color:var(--mute);font:500 13px Manrope,sans-serif;cursor:pointer;transition:.2s}
-.chip:hover{color:var(--text)}
-.chip.on{background:var(--text);color:#09090c;border-color:var(--text)}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,320px),1fr));gap:18px}
 .card{display:block;background:#111116;border:1px solid var(--line);border-radius:18px;padding:12px;transition:transform .3s,border-color .3s}
 .card:hover{transform:translateY(-6px);border-color:rgba(200,255,77,.5)}
 .card.hide{display:none}
-.cover{aspect-ratio:16/10;border-radius:10px;overflow:hidden;display:grid;place-items:center;font-family:Tektur,sans-serif;font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:rgba(241,237,228,.45);background-size:cover;background-position:center}
+.cover{aspect-ratio:16/10;border-radius:10px;overflow:hidden;display:grid;place-items:center;font-family:Unbounded,sans-serif;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:rgba(241,237,228,.45);background-size:cover;background-position:center}
 .cover img,.cover video{width:100%;height:100%;object-fit:cover;display:block}
 .meta{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;padding:16px 6px 6px}
 .meta small{display:block;color:var(--mute);font-size:11px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
-.meta h3{font-size:20px;font-weight:700;margin-bottom:6px}
+.meta h3{font-size:17px;font-weight:700;margin-bottom:6px}
 .meta p{color:var(--mute);font-size:13px}
 .arrow{flex:none;width:34px;height:34px;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center;transition:.25s}
 .card:hover .arrow{background:var(--accent);color:#09090c;border-color:var(--accent);transform:rotate(-45deg)}
 
-/* цены */
-.row{display:grid;grid-template-columns:minmax(150px,1.1fr) 2.4fr auto auto;gap:20px;align-items:center;padding:22px 10px;border-top:1px solid var(--line);transition:background .25s,padding .25s}
-.row:last-child{border-bottom:1px solid var(--line)}
-.row:hover{background:rgba(241,237,228,.04);padding-left:22px}
-.row h3{font-size:clamp(18px,2vw,24px);font-weight:700;text-transform:lowercase}
-.row p{color:var(--mute);font-size:14px}
-.row b{font-family:Tektur,sans-serif;font-size:18px;white-space:nowrap}
-.row a{color:var(--mute);font-size:13px;white-space:nowrap;transition:color .2s}
-.row a:hover{color:var(--accent)}
-@media(max-width:760px){.row{grid-template-columns:1fr auto;gap:8px 16px}.row p{grid-column:1/-1;order:3}.row a{display:none}}
 
 /* процесс */
 .steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:28px}
 .step{border-top:1px solid var(--line);padding-top:20px;transition:border-color .3s}
 .step:hover{border-color:var(--accent)}
-.num{font-size:44px;color:var(--mute);transition:color .3s}
+.num{font-size:38px;color:var(--mute);transition:color .3s}
 .step:hover .num{color:var(--accent)}
-.step h3{font-size:17px;font-weight:700;margin:14px 0 8px}
+.step h3{font-size:15px;font-weight:700;margin:14px 0 8px}
 .step p{color:var(--mute);font-size:14px}
 
 /* финал */
 .cta{text-align:center;min-height:80svh;display:flex;flex-direction:column;align-items:center;justify-content:center}
-.cta h2{font-size:clamp(40px,9vw,128px);text-transform:lowercase}
+.cta h2{font-size:clamp(30px,7.6vw,112px);font-weight:800;text-transform:lowercase}
 .cta p{margin:20px 0 30px;color:var(--mute)}
 .cta .btns{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
 footer{padding:24px var(--pad);text-align:center;color:var(--mute);font-size:12px;border-top:1px solid var(--line)}
@@ -124,12 +109,10 @@ footer{padding:24px var(--pad);text-align:center;color:var(--mute);font-size:12p
 <canvas id="field" aria-hidden="true"></canvas>
 
 <header id="top" class="intro i0">
-  <a class="logo" href="#" data-t="logo"></a>
   <nav>
     <a class="link" href="#works">Работы</a>
-    <a class="link" href="#prices">Цены</a>
     <a class="link" href="#process">Как работаю</a>
-    <a class="btn" data-h="contact" href="#">Написать</a>
+    <a class="btn" data-h="contact" href="#" target="_blank" rel="noopener">Написать</a>
   </nav>
 </header>
 
@@ -143,71 +126,45 @@ footer{padding:24px var(--pad);text-align:center;color:var(--mute);font-size:12p
   <section id="works"><div class="wrap">
     <div class="head rv">
       <div><span class="label">01 / портфолио</span><h2>мои работы</h2></div>
-      <div class="chips" id="chips"></div>
     </div>
     <div class="grid" id="grid"></div>
   </div></section>
 
-  <section id="prices"><div class="wrap">
-    <div class="head rv">
-      <div><span class="label">02 / услуги</span><h2>сколько стоит</h2></div>
-      <p data-t="pricesNote"></p>
-    </div>
-    <div id="rows"></div>
-  </div></section>
-
   <section id="process"><div class="wrap">
     <div class="head rv">
-      <div><span class="label">03 / процесс</span><h2>как я работаю</h2></div>
+      <div><span class="label">02 / процесс</span><h2>как я работаю</h2></div>
     </div>
     <div class="steps" id="steps"></div>
   </div></section>
 
   <section class="cta" id="contact">
-    <span class="label rv">04 / контакты</span>
+    <span class="label rv">03 / контакты</span>
     <h2 class="rv">есть проект?</h2>
     <p class="rv" data-t="ctaNote"></p>
     <div class="btns rv" id="links"></div>
   </section>
 </main>
 
-<footer data-t="footer"></footer>
-
 <script>
 /* ====== ВСЁ СОДЕРЖИМОЕ САЙТА МЕНЯЕТСЯ ЗДЕСЬ ====== */
 const DATA = {
-  logo: 'ваше имя',
-  title: 'made by <em>name</em>',          // <em> красит слово в акцентный цвет
-  subtitle: 'Пара строк о себе: чем занимаетесь и для кого. Это заглушка.',
-  contact: '#',                            // ссылка кнопки «Написать»
-  pricesNote: 'Цены примерные. Точную стоимость назову после обсуждения задачи.',
-  ctaNote: 'Напишите - отвечу в течение дня.',
-  footer: '© 2026 ваше имя',
-  works: [  // img: 'works/1.jpg' или video: 'works/1.mp4' вместо заглушки
-    { cat: 'Категория 1', title: 'Проект 01', text: 'Короткое описание работы в одну-две строки.', url: '#' },
-    { cat: 'Категория 2', title: 'Проект 02', text: 'Короткое описание работы в одну-две строки.', url: '#' },
-    { cat: 'Категория 3', title: 'Проект 03', text: 'Короткое описание работы в одну-две строки.', url: '#' },
-    { cat: 'Категория 1', title: 'Проект 04', text: 'Короткое описание работы в одну-две строки.', url: '#' },
-    { cat: 'Категория 2', title: 'Проект 05', text: 'Короткое описание работы в одну-две строки.', url: '#' },
-    { cat: 'Категория 3', title: 'Проект 06', text: 'Короткое описание работы в одну-две строки.', url: '#' },
-  ],
-  prices: [
-    { name: 'Услуга 1', text: 'Что входит в услугу, сроки и количество правок.', price: 'от 0 000 ₽' },
-    { name: 'Услуга 2', text: 'Что входит в услугу, сроки и количество правок.', price: 'от 0 000 ₽' },
-    { name: 'Услуга 3', text: 'Что входит в услугу, сроки и количество правок.', price: 'от 0 000 ₽' },
-    { name: 'Услуга 4', text: 'Что входит в услугу, сроки и количество правок.', price: 'от 0 000 ₽' },
-    { name: 'Своя идея', text: 'Нестандартная задача - обсудим отдельно.', price: 'по запросу' },
+  title: 'made by veertyy',                // слово в <em>...</em> покрасится в акцентный цвет
+  subtitle: '«ИИ пишет быстро. Что именно писать - решает человек.»',
+  contact: 'https://t.me/Veertyy',         // ссылка кнопки «Написать»
+  ctaNote: 'Напишите в Telegram - обсудим задачу.',
+  works: [  // img - обложка из папки works; label - текст вместо обложки; url - куда ведёт карточка
+    { title: 'Сакартвело', text: 'Сайт грузинского ресторана: меню, вина, бронирование столика.', img: 'works/sakartvelo.jpg', url: 'https://wroko141-spec.github.io/sakartvelo/' },
+    { title: 'Пион', text: 'Демо-сайт студии красоты.', img: 'works/pion.jpg', url: 'https://wroko141-spec.github.io/pion/' },
+    { title: 'Парсер hh.ru', text: 'Парсер вакансий hh.ru с фильтрами и выгрузкой в Excel.', label: 'hh.ru → Excel', url: 'https://github.com/wroko141-spec/hh-parser' },
   ],
   steps: [
-    { title: 'Заявка', text: 'Вы пишете мне и рассказываете о задаче.' },
-    { title: 'Предоплата', text: 'Согласуем объём, сроки и стоимость.' },
-    { title: 'Эскиз и правки', text: 'Показываю вариант, вносим изменения.' },
-    { title: 'Готовые файлы', text: 'Передаю результат в нужных форматах.' },
+    { title: 'Заявка', text: 'Вы пишете мне.' },
+    { title: 'Условия', text: 'Согласуем сроки, цену и объём.' },
+    { title: 'Вариант и правки', text: 'Показываю вариант, делаем правки.' },
+    { title: 'Результат', text: 'Передаю результат, а вы - оплату.' },
   ],
   links: [
-    { name: 'Написать в Telegram', url: '#' },
-    { name: 'Telegram-канал ↗', url: '#' },
-    { name: 'TikTok ↗', url: '#' },
+    { name: 'Telegram: @Veertyy', url: 'https://t.me/Veertyy' },
   ],
 };
 /* ================================================== */
@@ -228,28 +185,17 @@ const covers = [
 $('#grid').innerHTML = DATA.works.map((w, i) => {
   const media = w.video ? `<video src="${esc(w.video)}" muted loop playsinline autoplay></video>`
     : w.img ? `<img src="${esc(w.img)}" alt="${esc(w.title)}" loading="lazy">`
-    : `обложка ${String(i + 1).padStart(2, '0')}`;
-  return `<a class="card rv" href="${esc(w.url)}" data-cat="${esc(w.cat)}">
+    : esc(w.label || '');
+  return `<a class="card rv" href="${esc(w.url)}" target="_blank" rel="noopener">
     <div class="cover" style="background-image:${covers[i % covers.length]}">${media}</div>
-    <div class="meta"><div><small>${esc(w.cat)}</small><h3>${esc(w.title)}</h3><p>${esc(w.text)}</p></div><span class="arrow">→</span></div>
+    <div class="meta"><div><h3>${esc(w.title)}</h3><p>${esc(w.text)}</p></div><span class="arrow">→</span></div>
   </a>`;
 }).join('');
 
-const cats = ['Все', ...new Set(DATA.works.map(w => w.cat))];
-$('#chips').innerHTML = cats.map((c, i) => `<button class="chip${i ? '' : ' on'}" data-c="${esc(c)}">${esc(c)}</button>`).join('');
-$('#chips').addEventListener('click', e => {
-  const b = e.target.closest('.chip'); if (!b) return;
-  document.querySelectorAll('.chip').forEach(c => c.classList.toggle('on', c === b));
-  document.querySelectorAll('.card').forEach(c =>
-    c.classList.toggle('hide', b.dataset.c !== 'Все' && c.dataset.cat !== b.dataset.c));
-});
-
-$('#rows').innerHTML = DATA.prices.map(p => `<div class="row rv">
-  <h3>${esc(p.name)}</h3><p>${esc(p.text)}</p><b>${esc(p.price)}</b><a href="${esc(DATA.contact)}">заказать →</a></div>`).join('');
 $('#steps').innerHTML = DATA.steps.map((s, i) => `<div class="step rv">
   <div class="num">${String(i + 1).padStart(2, '0')}</div><h3>${esc(s.title)}</h3><p>${esc(s.text)}</p></div>`).join('');
 $('#links').innerHTML = DATA.links.map((l, i) =>
-  `<a class="btn${i ? ' ghost' : ''}" href="${esc(l.url)}">${esc(l.name)}</a>`).join('');
+  `<a class="btn${i ? ' ghost' : ''}" href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.name)}</a>`).join('');
 
 /* появление блоков */
 const io = new IntersectionObserver(es => es.forEach(e => {
