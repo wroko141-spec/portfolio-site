@@ -107,15 +107,22 @@ section{padding:clamp(72px,11vw,150px) var(--pad)}
 footer{padding:24px var(--pad);text-align:center;color:var(--mute);font-size:12px;border-top:1px solid var(--line)}
 
 /* появление */
-.rv{opacity:0;transform:translateY(18px);transition:opacity .8s ease,transform .8s cubic-bezier(.2,.7,.2,1)}
-.rv.in{opacity:1;transform:none}
-@media(prefers-reduced-motion:reduce){.rv{opacity:1;transform:none;transition:none}.scroll{animation:none}}
+.rv{opacity:0;transform:translateY(26px);filter:blur(6px);transition:opacity .9s ease,transform .9s cubic-bezier(.2,.7,.2,1),filter .9s ease}
+.rv.in{opacity:1;transform:none;filter:none}
+/* появление при входе на сайт */
+@keyframes intro{from{opacity:0;transform:translateY(26px);filter:blur(10px)}to{opacity:1;transform:none;filter:none}}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.intro{animation:intro 1.2s cubic-bezier(.2,.7,.2,1) both}
+.intro.i0{animation:fade 1s .1s both}.intro.i1{animation-delay:.35s}.intro.i2{animation-delay:.7s}
+.scroll.intro{animation:fade 1s 1.2s both,bob 2s 2.2s ease-in-out infinite}
+#field{animation:fade 1.8s ease both}
+@media(prefers-reduced-motion:reduce){.rv{opacity:1;transform:none;filter:none;transition:none}.intro,.scroll.intro,#field{animation:none}}
 </style>
 </head>
 <body>
 <canvas id="field" aria-hidden="true"></canvas>
 
-<header id="top">
+<header id="top" class="intro i0">
   <a class="logo" href="#" data-t="logo"></a>
   <nav>
     <a class="link" href="#works">Работы</a>
@@ -127,9 +134,9 @@ footer{padding:24px var(--pad);text-align:center;color:var(--mute);font-size:12p
 
 <main>
   <section class="hero">
-    <h1 data-t="title"></h1>
-    <p data-t="subtitle"></p>
-    <a class="scroll" href="#works" aria-label="Вниз">↓</a>
+    <h1 class="intro i1" data-t="title"></h1>
+    <p class="intro i2" data-t="subtitle"></p>
+    <a class="scroll intro i3" href="#works" aria-label="Вниз">↓</a>
   </section>
 
   <section id="works"><div class="wrap">
@@ -281,7 +288,12 @@ const BG = {
   dimStart: 0.3,         // с какой доли первого экрана начинается затемнение
   dimEnd: 1.1,           // где оно заканчивается
   maxPixelRatio: 1.5,    // потолок чёткости (качество)
-  minFps: 50,            // ниже этого FPS качество плавно снижается
+  adaptive: true,        // подстраивать качество при долгой просадке FPS (false - никогда не трогать)
+  minFps: 30,            // ниже этого FPS (дольше 3 с) качество слегка снижается, но не больше чем до 60% частиц
+  particle: 'flowers',   // форма: flowers | daisy | sakura | sparkle | star | snow | heart | butterfly | crystal | bubble
+  dust: 600,             // мини-частицы в небе (0 - выключить)
+  glow: 1,               // сила лунного свечения (0 - выключить)
+  glowColor: [0.046, 0.037, 0.105], // цвет свечения (R, G, B от 0 до 1)
   scrollLerp: 0.12,      // инерция прокрутки: больше - резче, меньше - мягче
 };
 /* ============================ */
@@ -319,11 +331,12 @@ const VERT = `
 attribute vec3 aPos;    // x, z, фаза
 attribute vec4 aRnd;    // размер, вид цветка, скорость покачивания, высота стебля
 attribute vec3 aTint;
-uniform float uT, uDrift, uSway, uSize, uXS, uWave, uWT, uSpin;
+uniform float uT, uDrift, uSway, uSize, uXS, uWave, uWT, uSpin, uStem;
 varying vec2 vUv; varying vec3 vTint; varying float vFog, vPart;
 const float Z0 = -36., ZL = 44., XR = 24.;
 void main(){
   float part = position.z, ph = aPos.z, sp = aRnd.z;
+  if (part < 2.5 && uStem < .5) { gl_Position = vec4(2., 2., 2., 1.); return; }   // форма без стебля и листьев
   float x = aPos.x * uXS, z = mod(aPos.y + uDrift, ZL) + Z0;   // uXS сжимает поле на узких экранах
   float e = aPos.x / XR;
   // рельеф: мягкие холмы + приподнятые края; едет вместе с цветами
@@ -354,8 +367,32 @@ void main(){
   vUv = uvl; vPart = part; vFog = exp(-fd * fd);
   vTint = part > 2.5 ? aTint : vec3(1.);
 }`;
-const FRAG = `
-uniform sampler2D uMap; uniform vec3 uBg; uniform float uDim;
+const SKY = `
+uniform vec3 uBg, uGlowCol; uniform vec2 uRes; uniform float uGlow;
+vec3 sky(vec2 fc){                       // фон: тёмное небо с мягким лунно-фиолетовым свечением
+  vec2 p = fc / uRes; float asp = uRes.x / uRes.y;
+  vec2 d = (p - vec2(.5, .68)) * vec2(asp * .5, 1.3);
+  float g = exp(-dot(d, d) * 3.) + exp(-pow((p.y - .5) * 3.4, 2.)) * .3;
+  return uBg + uGlowCol * g * uGlow;
+}
+`;
+const DUST_V = `
+attribute float aSeed; uniform float uT, uDrift, uPR, uDim; varying float vA;
+void main(){
+  vec3 p = position;
+  p.z = mod(p.z + uDrift * .3, 44.) - 36.;
+  p.y += sin(uT * .35 + aSeed * 40.) * .35; p.x += cos(uT * .25 + aSeed * 70.) * .45;
+  vec4 mv = viewMatrix * vec4(p, 1.); gl_Position = projectionMatrix * mv;
+  float tw = .35 + .65 * (.5 + .5 * sin(uT * (.7 + aSeed * 2.) + aSeed * 90.));
+  float fade = min(1., (p.z + 36.) / 6.) * clamp((6. - p.z) / 4., 0., 1.);
+  vA = tw * fade * uDim * (.4 + .6 * aSeed);
+  gl_PointSize = (1.4 + aSeed * aSeed * 2.8) * uPR;
+}`;
+const DUST_F = `
+varying float vA;
+void main(){ float a = smoothstep(.5, .1, length(gl_PointCoord - .5)) * vA; gl_FragColor = vec4(vec3(.84, .87, 1.), a); }`;
+const FRAG = SKY + `
+uniform sampler2D uMap; uniform float uDim;
 varying vec2 vUv; varying vec3 vTint; varying float vFog, vPart;
 void main(){
   vec3 col; float a = 1.;
@@ -369,28 +406,89 @@ void main(){
     col = t.rgb / max(a, .001) * vTint;
   }
   if (a < .1) discard;
-  gl_FragColor = vec4(mix(uBg, col, vFog * uDim), a);
+  gl_FragColor = vec4(mix(sky(gl_FragCoord.xy), col, vFog * uDim), a);
 }`;
 
-function flowerAtlas() {            // два цветка: 5 и 6 лепестков
+/* --- формы частиц: каждая рисует два спрайта (k = 0 и 1) в атлас --- */
+const TAU = Math.PI * 2;
+const lin = (g, y0, y1, ...st) => { const gr = g.createLinearGradient(0, y0, 0, y1); st.forEach((c, i) => gr.addColorStop(i / (st.length - 1), c)); return gr; };
+const dot = (g, r, c0, c1) => { const cg = g.createRadialGradient(-r * .3, -r * .3, r * .1, 0, 0, r); cg.addColorStop(0, c0); cg.addColorStop(1, c1); g.fillStyle = cg; g.beginPath(); g.arc(0, 0, r, 0, TAU); g.fill(); };
+function petals(g, n, R, w, l, fill) {
+  for (let i = 0; i < n; i++) {
+    g.save(); g.rotate(i / n * TAU); g.fillStyle = fill; g.shadowColor = 'rgba(40,48,66,.5)'; g.shadowBlur = 16;
+    g.beginPath(); g.ellipse(0, -R * (1 - l), R * w, R * l, 0, 0, TAU); g.fill(); g.restore();
+  }
+}
+const W3 = [[1, 1, 1], [1, 1, 1], [1, 1, 1]];
+const SHAPES = {
+  flowers: { name: 'Цветы на стеблях', stems: 1,
+    tints: [...W3, ...W3, [1, 1, 1], [1, .97, .92], [1, .97, .92], [1, .97, .92], [1, .91, .94], [.89, .98, .94]],
+    draw(g, k, R) { petals(g, k ? 6 : 5, R, k ? .3 : .36, .44, lin(g, -R * .12, -R, '#c9ced6', '#f1f2f4', '#ffffff', '#ffffff')); dot(g, R * .17, '#f4ecc0', '#bfb277'); } },
+  daisy: { name: 'Ромашки', stems: 1, tints: [...W3, [1, .98, .94]],
+    draw(g, k, R) { petals(g, k ? 17 : 13, R, k ? .085 : .105, .4, lin(g, -R * .2, -R, '#d5d9df', '#ffffff', '#ffffff')); dot(g, R * .25, '#ffe27a', '#d19a1e'); } },
+  sakura: { name: 'Сакура', stems: 0, tints: [...W3, [1, .93, .96], [1, .86, .92]],
+    draw(g, k, R) {
+      for (let i = 0; i < 5; i++) {
+        g.save(); g.rotate(i / 5 * TAU + k * .3); g.fillStyle = lin(g, 0, -R, '#ff8fb5', '#ffc4d8', '#fff1f6'); g.shadowColor = 'rgba(120,30,70,.45)'; g.shadowBlur = 14;
+        g.beginPath(); g.moveTo(0, -R * .08); g.bezierCurveTo(R * .52, -R * .3, R * .44, -R * .95, R * .1, -R); g.lineTo(0, -R * .84); g.lineTo(-R * .1, -R);
+        g.bezierCurveTo(-R * .44, -R * .95, -R * .52, -R * .3, 0, -R * .08); g.fill(); g.restore();
+      }
+      dot(g, R * .1, '#ff7aa6', '#c93a70');
+    } },
+  sparkle: { name: 'Искры', stems: 0, size: .85, tints: [...W3, [.86, .83, 1], [.8, .95, 1]],
+    draw(g, k, R) {
+      const n = k ? 8 : 4, P = i => { const a = i / n * TAU, r = k && i % 2 ? R * .45 : R; return [Math.sin(a) * r, -Math.cos(a) * r]; };
+      const C = i => { const a = (i + .5) / n * TAU; return [Math.sin(a) * R * .1, -Math.cos(a) * R * .1]; };
+      const rg = g.createRadialGradient(0, 0, 0, 0, 0, R); rg.addColorStop(0, '#ffffff'); rg.addColorStop(1, '#cfd6ff');
+      g.fillStyle = rg; g.beginPath(); g.moveTo(...P(0)); for (let i = 1; i <= n; i++) g.quadraticCurveTo(...C(i - 1), ...P(i % n)); g.fill();
+    } },
+  star: { name: 'Звёзды', stems: 0, tints: [...W3, [1, .95, .75], [1, .9, .6]],
+    draw(g, k, R) {
+      const n = k ? 6 : 5; g.fillStyle = g.strokeStyle = lin(g, -R, R, '#ffffff', '#ffeeb8'); g.lineJoin = 'round'; g.lineWidth = R * .16;
+      g.beginPath(); for (let i = 0; i < n * 2; i++) { const a = i / n * Math.PI, r = i % 2 ? R * .4 : R * .88; g.lineTo(Math.sin(a) * r, -Math.cos(a) * r); }
+      g.closePath(); g.fill(); g.stroke();
+    } },
+  snow: { name: 'Снежинки', stems: 0, tints: [...W3, [.85, .93, 1]],
+    draw(g, k, R) {
+      g.strokeStyle = '#ffffff'; g.lineCap = 'round'; g.lineWidth = R * .085;
+      for (let i = 0; i < 6; i++) {
+        g.save(); g.rotate(i / 6 * TAU); g.beginPath(); g.moveTo(0, 0); g.lineTo(0, -R * .95);
+        for (const h of k ? [.35, .6, .8] : [.45, .72]) { g.moveTo(0, -R * h); g.lineTo(R * .2, -R * (h + .18)); g.moveTo(0, -R * h); g.lineTo(-R * .2, -R * (h + .18)); }
+        g.stroke(); g.restore();
+      }
+    } },
+  heart: { name: 'Сердечки', stems: 0, tints: [...W3, [1, .72, .82], [1, .48, .62]],
+    draw(g, k, R) {
+      g.rotate(k ? .25 : -.1); g.fillStyle = lin(g, -R * .8, R * .8, '#ffffff', '#f0d2dc'); g.shadowColor = 'rgba(90,20,50,.4)'; g.shadowBlur = 14;
+      g.beginPath(); g.moveTo(0, R * .8); g.bezierCurveTo(-R * 1.3, -R * .05, -R * .62, -R * 1.02, 0, -R * .38); g.bezierCurveTo(R * .62, -R * 1.02, R * 1.3, -R * .05, 0, R * .8); g.fill();
+    } },
+  butterfly: { name: 'Бабочки', stems: 0, tints: [...W3, [.8, .85, 1], [1, .85, .95], [.85, 1, .95]],
+    draw(g, k, R) {
+      for (const s of [-1, 1]) {
+        g.fillStyle = lin(g, -R * .7, R * .1, '#ffffff', '#d7dcee'); g.beginPath(); g.ellipse(s * R * .48, -R * .26, R * .5, R * (k ? .3 : .36), s * -.5, 0, TAU); g.fill();
+        g.fillStyle = '#e4e8f4'; g.beginPath(); g.ellipse(s * R * .36, R * .36, R * .32, R * .25, s * .6, 0, TAU); g.fill();
+        if (k) { g.fillStyle = '#9aa3c4'; g.beginPath(); g.arc(s * R * .6, -R * .3, R * .09, 0, TAU); g.fill(); }
+      }
+      g.fillStyle = '#343a4e'; g.beginPath(); g.ellipse(0, 0, R * .055, R * .44, 0, 0, TAU); g.fill();
+    } },
+  crystal: { name: 'Кристаллы', stems: 0, tints: [...W3, [.8, .75, 1], [.7, .95, 1]],
+    draw(g, k, R) {
+      const n = k ? 6 : 4, sh = ['#ffffff', '#cdd2ea', '#9aa1c8', '#e3e6f6', '#b7bddc', '#f4f5fb'];
+      const V = i => { const a = i / n * TAU; return [Math.sin(a) * R * (k ? .8 : (i % 2 ? .56 : 1)), -Math.cos(a) * R * (k ? .8 : (i % 2 ? .56 : 1))]; };
+      for (let i = 0; i < n; i++) { g.fillStyle = sh[i % sh.length]; g.beginPath(); g.moveTo(0, 0); g.lineTo(...V(i)); g.lineTo(...V((i + 1) % n)); g.fill(); }
+    } },
+  bubble: { name: 'Пузыри', stems: 0, tints: [...W3, [.8, .9, 1], [.9, .8, 1]],
+    draw(g, k, R) {
+      const r = R * (k ? .62 : .84); g.fillStyle = 'rgba(255,255,255,.16)'; g.beginPath(); g.arc(0, 0, r, 0, TAU); g.fill();
+      g.strokeStyle = 'rgba(255,255,255,.95)'; g.lineWidth = R * .085; g.stroke();
+      g.lineCap = 'round'; g.beginPath(); g.arc(0, 0, r * .66, -2.5, -1.6); g.stroke();
+    } },
+};
+
+function shapeAtlas(shape) {
   const S = 512, c = document.createElement('canvas'); c.width = S * 2; c.height = S;
   const g = c.getContext('2d');
-  [5, 6].forEach((n, k) => {
-    g.save(); g.translate(S * k + S / 2, S / 2);
-    const R = 218;
-    for (let i = 0; i < n; i++) {
-      g.save(); g.rotate(i / n * Math.PI * 2);
-      const gr = g.createLinearGradient(0, -R * .12, 0, -R);
-      gr.addColorStop(0, '#c9ced6'); gr.addColorStop(.35, '#f1f2f4'); gr.addColorStop(1, '#ffffff');
-      g.fillStyle = gr; g.shadowColor = 'rgba(40,48,66,.5)'; g.shadowBlur = 16;
-      g.beginPath(); g.ellipse(0, -R * .56, R * (n === 5 ? .36 : .3), R * .44, 0, 0, Math.PI * 2); g.fill();
-      g.restore();
-    }
-    const cg = g.createRadialGradient(-6, -6, 2, 0, 0, R * .2);
-    cg.addColorStop(0, '#f4ecc0'); cg.addColorStop(1, '#bfb277');
-    g.fillStyle = cg; g.beginPath(); g.arc(0, 0, R * .17, 0, Math.PI * 2); g.fill();
-    g.restore();
-  });
+  for (const k of [0, 1]) { g.save(); g.translate(S * k + S / 2, S / 2); shape.draw(g, k, 218); g.restore(); }
   return c;
 }
 
@@ -411,16 +509,21 @@ function plantGeometry(THREE) {      // стебель + 2 листа + цвет
 
 async function createField() {
   const THREE = await import('three');
-  const cv = document.getElementById('field');
-  const weak = (navigator.hardwareConcurrency || 8) <= 4 || (navigator.deviceMemory || 8) <= 4;
-  let pr = Math.min(devicePixelRatio || 1, BG.maxPixelRatio, mobile ? 1.5 : 2);
+  const cv = document.getElementById('field'), q = new URLSearchParams(location.search);
+  const shape = SHAPES[q.get('p')] || SHAPES[BG.particle] || SHAPES.flowers;
+  const fixed = q.get('q') === 'fixed' || !BG.adaptive;
   const renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: true, powerPreference: 'high-performance', stencil: false });
+  const gl = renderer.getContext(), dbg = gl.getExtension('WEBGL_debug_renderer_info');
+  const gpu = dbg ? String(gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL)) : '';
+  // браузер без аппаратного ускорения рисует процессором: сразу берём лёгкий режим
+  const soft = !fixed && /swiftshader|llvmpipe|software|basic render/i.test(gpu);
+  const weak = (navigator.hardwareConcurrency || 8) <= 4 || (navigator.deviceMemory || 8) <= 4;
+  let pr = soft ? 1 : Math.min(devicePixelRatio || 1, BG.maxPixelRatio, mobile ? 1.5 : 2);
   renderer.setClearColor(0x06070b, 1);
   const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(46, 1, .1, 80);
 
-  const N = Math.round((mobile ? BG.countMobile : BG.countDesktop) * BG.density * (weak ? .7 : 1));
-  const minN = Math.round(N * .3), rnd = Math.random;
-  const tints = [[1, 1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1], [1, .97, .92], [1, .97, .92], [1, .97, .92], [1, .91, .94], [.89, .98, .94]];
+  const N = Math.round((mobile ? BG.countMobile : BG.countDesktop) * BG.density * (weak ? .7 : 1) * (soft ? .5 : 1));
+  const minN = Math.round(N * .6), rnd = Math.random, tints = shape.tints;
   const aPos = new Float32Array(N * 3), aRnd = new Float32Array(N * 4), aTint = new Float32Array(N * 3);
   for (let i = 0; i < N; i++) {
     aPos.set([(rnd() * 2 - 1) * 24, rnd() * 44, rnd() * 6.283], i * 3);
@@ -432,11 +535,29 @@ async function createField() {
   geo.setAttribute('aRnd', new THREE.InstancedBufferAttribute(aRnd, 4));
   geo.setAttribute('aTint', new THREE.InstancedBufferAttribute(aTint, 3));
   geo.instanceCount = N;
-  const map = new THREE.CanvasTexture(flowerAtlas()); map.premultiplyAlpha = true; map.anisotropy = 4;
-  const U = { uT: { value: 0 }, uDrift: { value: 0 }, uSway: { value: still ? 0 : BG.swayAmp }, uSize: { value: BG.flowerSize }, uXS: { value: 1 }, uWave: { value: BG.waveAmp }, uWT: { value: 0 }, uSpin: { value: BG.spin },
-              uDim: { value: 1 }, uMap: { value: map }, uBg: { value: new THREE.Vector3(6 / 255, 7 / 255, 11 / 255) } };
+  const map = new THREE.CanvasTexture(shapeAtlas(shape)); map.premultiplyAlpha = true; map.anisotropy = 4;
+  const S = { uBg: { value: new THREE.Vector3(6 / 255, 7 / 255, 11 / 255) }, uGlowCol: { value: new THREE.Vector3(...BG.glowColor) },
+              uRes: { value: new THREE.Vector2(1, 1) }, uGlow: { value: BG.glow } };
+  const U = { ...S, uT: { value: 0 }, uDrift: { value: 0 }, uSway: { value: still ? 0 : BG.swayAmp }, uSize: { value: BG.flowerSize * (shape.size || 1) }, uXS: { value: 1 },
+              uWave: { value: BG.waveAmp }, uWT: { value: 0 }, uSpin: { value: BG.spin }, uStem: { value: shape.stems ? 1 : 0 }, uDim: { value: 1 }, uMap: { value: map } };
   const mesh = new THREE.Mesh(geo, new THREE.ShaderMaterial({ uniforms: U, vertexShader: VERT, fragmentShader: FRAG, alphaToCoverage: true }));
   mesh.frustumCulled = false; scene.add(mesh);
+
+  // небо: свечение одним полноэкранным прямоугольником
+  const sky = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), new THREE.ShaderMaterial({ uniforms: S, depthTest: false, depthWrite: false,
+    vertexShader: 'void main(){ gl_Position = vec4(position.xy, 1., 1.); }',
+    fragmentShader: SKY + 'void main(){ float n = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453); gl_FragColor = vec4(sky(gl_FragCoord.xy) + (n - .5) / 255., 1.); }' }));
+  sky.frustumCulled = false; sky.renderOrder = -2; scene.add(sky);
+
+  // мини-частицы в небе
+  const DN = Math.round(BG.dust * (mobile ? .5 : 1)), dp = new Float32Array(DN * 3), ds = new Float32Array(DN);
+  for (let i = 0; i < DN; i++) { dp.set([(rnd() * 2 - 1) * 42, 1 + rnd() * 22, rnd() * 44], i * 3); ds[i] = rnd(); }
+  const dgeo = new THREE.BufferGeometry();
+  dgeo.setAttribute('position', new THREE.BufferAttribute(dp, 3)); dgeo.setAttribute('aSeed', new THREE.BufferAttribute(ds, 1));
+  const DU = { uT: U.uT, uDrift: U.uDrift, uDim: U.uDim, uPR: { value: pr } };
+  const dust = new THREE.Points(dgeo, new THREE.ShaderMaterial({ uniforms: DU, vertexShader: DUST_V, fragmentShader: DUST_F,
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
+  dust.frustumCulled = false; if (DN) scene.add(dust);
 
   const look = new THREE.Vector3();
   let W = 0, H = 0, t = 0, p = 0, mx = 0, my = 0, count = N, countTo = N, ema = 1 / 60, bad = 0, lost = false, dirty = true;
@@ -444,6 +565,7 @@ async function createField() {
     const w = cv.clientWidth, h = cv.clientHeight;
     if (w === W && h === H && renderer.getPixelRatio() === pr) return;
     W = w; H = h; renderer.setPixelRatio(pr); renderer.setSize(w, h, false);
+    S.uRes.value.set(w * pr, h * pr); DU.uPR.value = pr;
     camera.aspect = w / h; camera.fov = w < h ? 62 : 46; U.uXS.value = Math.min(1, Math.max(.45, w / h / 1.5)); camera.updateProjectionMatrix(); dirty = true;
   }
   cv.addEventListener('webglcontextlost', e => { e.preventDefault(); lost = true; });
@@ -452,7 +574,7 @@ async function createField() {
 
   const sm = (a, b, x) => { x = Math.min(1, Math.max(0, (x - a) / (b - a))); return x * x * (3 - 2 * x); };
   return {
-    resize, stats: () => ({ count: geo.instanceCount, total: N, pr, calls: renderer.info.render.calls, tris: renderer.info.render.triangles,
+    resize, stats: () => ({ shape: shape.name, count: geo.instanceCount, total: N, pr, gpu, soft, calls: renderer.info.render.calls, tris: renderer.info.render.triangles,
                             geometries: renderer.info.memory.geometries, textures: renderer.info.memory.textures }),
     frame(dt, raw, scrollPx, tx, ty) {
       if (lost) return;
@@ -469,18 +591,20 @@ async function createField() {
       look.set(mx * .2 * k, camY - .9, -6); camera.lookAt(look);
       U.uT.value = t; U.uWT.value = t * BG.waveSpeed;
       U.uDrift.value = t * BG.idleDrift + (still ? 0 : p * BG.cameraSpeed);
-      U.uDim.value = 1 - (1 - BG.dimTo) * sm(BG.dimStart, BG.dimEnd, p);
+      const dim = sm(BG.dimStart, BG.dimEnd, p);
+      U.uDim.value = 1 - (1 - BG.dimTo) * dim; S.uGlow.value = BG.glow * (1 - .6 * dim);
       if (count !== countTo) { count += (countTo - count) * Math.min(1, dt * 2); if (Math.abs(count - countTo) < 2) count = countTo; geo.instanceCount = count | 0; }
       renderer.render(scene, camera);
 
-      // устойчивая просадка FPS -> плавно снижаем качество (обратно не повышаем, чтобы не «качало»)
-      if (still || raw <= 0 || raw > .5) return;          // > 0.5 с - вкладка была скрыта, не считаем
-      ema += (Math.min(raw, .1) - ema) * .05;
+      // подстройка качества: только при долгой настоящей просадке, сначала чёткость, потом немного цветов.
+      // Паузы, фоновая вкладка и первые секунды после загрузки не считаются.
+      if (fixed || still || t < 4 || raw <= 0 || raw > .25 || (raw > .1 && !document.hasFocus())) return;
+      ema += (raw - ema) * .05;
       bad = ema > 1 / BG.minFps ? bad + raw : Math.max(0, bad - raw * 2);
-      if (bad > 1.2) {
+      if (bad > 3) {
         bad = 0; ema = 1 / 60;
         if (pr > 1) { pr = Math.max(1, pr - .25); resize(); }
-        else if (countTo > minN) countTo = Math.max(minN, countTo * .8 | 0);
+        else if (countTo > minN) countTo = Math.max(minN, countTo * .85 | 0);
       }
     },
   };
