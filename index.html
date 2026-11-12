@@ -76,12 +76,6 @@ section{padding:clamp(72px,11vw,150px) var(--pad)}
 
 
 /* что я делаю */
-.marquee{overflow:hidden;border-block:1px solid var(--line);padding:20px 0;margin-bottom:clamp(48px,7vw,96px);-webkit-mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent);mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent)}
-.marquee div{display:flex;gap:36px;width:max-content;animation:mq 32s linear infinite;font:700 clamp(17px,2.3vw,30px)/1 Unbounded,sans-serif;text-transform:lowercase;white-space:nowrap}
-.marquee i{font-style:normal;color:var(--accent)}
-@keyframes mq{to{transform:translateX(-50%)}}
-#skills{padding-inline:0}
-#skills .wrap{padding-inline:var(--pad);max-width:calc(1240px + var(--pad)*2)}
 .skills{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));gap:16px}
 .skill{position:relative;overflow:hidden;background:linear-gradient(160deg,#15151d,#0c0c12);border:1px solid var(--line);border-radius:20px;padding:26px 24px 24px;transition:transform .35s,border-color .35s}
 .skill::before{content:"";position:absolute;inset:0;background:radial-gradient(380px circle at var(--mx,50%) var(--my,0%),rgba(200,255,77,.14),transparent 55%);opacity:0;transition:opacity .35s;pointer-events:none}
@@ -96,7 +90,6 @@ section{padding:clamp(72px,11vw,150px) var(--pad)}
 .skill p{color:var(--mute);font-size:14px;margin-bottom:20px}
 .tags{display:flex;flex-wrap:wrap;gap:6px}
 .tags span{font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:5px 10px;border-radius:999px;border:1px solid var(--line);color:var(--mute)}
-.calm .marquee div{animation:none}
 
 /* процесс */
 .steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:28px}
@@ -148,7 +141,6 @@ footer{padding:24px var(--pad);text-align:center;color:var(--mute);font-size:12p
   </section>
 
   <section id="skills">
-    <div class="marquee rv" aria-hidden="true"><div id="marquee"></div></div>
     <div class="wrap">
       <div class="head rv">
         <div><span class="label">01 / направления</span><h2>что я делаю</h2></div>
@@ -245,8 +237,6 @@ $('#skillsGrid').innerHTML = DATA.skills.map((s, i) => `<div class="skill rv">
   <div class="ico"><svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[s.icon] || ''}</svg></div>
   <h3>${esc(s.title)}</h3><p>${esc(s.text)}</p>
   <div class="tags">${s.tags.map(t => `<span>${esc(t)}</span>`).join('')}</div></div>`).join('');
-const mq = DATA.skills.flatMap(s => [s.title, ...s.tags.slice(0, 2)]).map(t => `<span>${esc(t)}</span><i>✦</i>`).join('');
-$('#marquee').innerHTML = mq + mq;                   // два одинаковых ряда = бесшовная лента
 $('#skillsGrid').addEventListener('pointermove', e => {   // свечение карточки идёт за курсором
   const c = e.target.closest('.skill'); if (!c) return;
   const r = c.getBoundingClientRect(); c.style.setProperty('--mx', e.clientX - r.left + 'px'); c.style.setProperty('--my', e.clientY - r.top + 'px');
