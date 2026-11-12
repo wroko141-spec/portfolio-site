@@ -29,8 +29,8 @@ h1,h2,h3,.num,.logo{font-family:Tektur,Manrope,sans-serif;font-weight:800;letter
 main,header,footer{position:relative;z-index:1}
 
 /* шапка */
-header{position:fixed;top:0;left:0;right:0;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px var(--pad);z-index:10;transition:background .3s,backdrop-filter .3s}
-header.solid{background:rgba(9,9,12,.72);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+header{position:fixed;top:0;left:0;right:0;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px var(--pad);z-index:10;transition:background .3s}
+header.solid{background:rgba(9,9,12,.92);border-bottom:1px solid var(--line)}
 .logo{font-size:15px;font-weight:700}
 nav{display:flex;align-items:center;gap:clamp(12px,2.4vw,32px);font-size:13px;text-transform:uppercase;letter-spacing:.08em}
 nav a.link{color:var(--mute);transition:color .2s}
@@ -63,7 +63,7 @@ section{padding:clamp(72px,11vw,150px) var(--pad)}
 .chip:hover{color:var(--text)}
 .chip.on{background:var(--text);color:#09090c;border-color:var(--text)}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,320px),1fr));gap:18px}
-.card{display:block;background:rgba(17,17,22,.78);border:1px solid var(--line);border-radius:18px;padding:12px;transition:transform .3s,border-color .3s}
+.card{display:block;background:#111116;border:1px solid var(--line);border-radius:18px;padding:12px;transition:transform .3s,border-color .3s}
 .card:hover{transform:translateY(-6px);border-color:rgba(200,255,77,.5)}
 .card.hide{display:none}
 .cover{aspect-ratio:16/10;border-radius:10px;overflow:hidden;display:grid;place-items:center;font-family:Tektur,sans-serif;font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:rgba(241,237,228,.45);background-size:cover;background-position:center}
@@ -103,7 +103,7 @@ section{padding:clamp(72px,11vw,150px) var(--pad)}
 footer{padding:24px var(--pad);text-align:center;color:var(--mute);font-size:12px;border-top:1px solid var(--line)}
 
 /* выбор частиц */
-.picker{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:9;display:flex;align-items:center;gap:6px;max-width:calc(100vw - 24px);overflow-x:auto;padding:6px;border-radius:999px;background:rgba(17,17,22,.8);border:1px solid var(--line);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);scrollbar-width:none}
+.picker{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:9;display:flex;align-items:center;gap:6px;max-width:calc(100vw - 24px);overflow-x:auto;padding:6px;border-radius:999px;background:rgba(17,17,22,.94);border:1px solid var(--line);scrollbar-width:none}
 .picker span{padding:0 8px 0 12px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute);white-space:nowrap}
 .picker button{padding:8px 14px;border-radius:999px;border:0;background:none;color:var(--mute);font:500 13px Manrope,sans-serif;cursor:pointer;white-space:nowrap;transition:.2s}
 .picker button:hover{color:var(--text)}
@@ -286,7 +286,9 @@ if (!still) (async () => {
   } catch (e) { document.documentElement.style.scrollBehavior = 'smooth'; }
 })();
 
-/* ====== 3D-поле частиц ====== */
+/* ====== 3D-поле частиц ======
+   Быстрый вариант: каждая форма один раз «запекается» из 3D-модели в атлас кадров,
+   а поле рисуется одним вызовом из плоских спрайтов. Вся анимация считается в шейдере на видеокарте. */
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
@@ -305,105 +307,165 @@ const TYPES = {
     const p = g.attributes.position;
     for (let i = 0; i < p.count; i++) { const x = p.getX(i), y = p.getY(i); p.setZ(i, p.getZ(i) + .42 * (x * x + y * y)); }
     g.rotateX(-Math.PI / 2); g.computeVertexNormals();
-    const c = new THREE.SphereGeometry(.2, 16, 12); c.translate(0, .13, 0);
-    return [[g, std({ roughness: .5, metalness: 0, side: THREE.DoubleSide }), true],
-            [c, std({ color: '#c8ff4d', roughness: .35, emissive: '#5a7a10', emissiveIntensity: .6 }), false]];
+    const c = new THREE.SphereGeometry(.2, 20, 14); c.translate(0, .13, 0);
+    return [[g, std({ roughness: .5, metalness: 0, side: THREE.DoubleSide })],
+            [c, std({ color: '#c8ff4d', roughness: .35, emissive: '#5a7a10', emissiveIntensity: .6 })]];
   } },
   star: { name: 'Звёзды', size: 1, parts: () => {
     const sh = new THREE.Shape();
     for (let i = 0; i < 10; i++) { const a = i * Math.PI / 5 + Math.PI / 2, r = i % 2 ? .47 : 1; i ? sh.lineTo(Math.cos(a) * r, Math.sin(a) * r) : sh.moveTo(Math.cos(a) * r, Math.sin(a) * r); }
     const g = new THREE.ExtrudeGeometry(sh, { depth: .2, bevelEnabled: true, bevelThickness: .14, bevelSize: .12, bevelSegments: 4 });
     g.center();
-    return [[g, std({ roughness: .22, metalness: .65 }), true]];
+    return [[g, std({ roughness: .22, metalness: .65 })]];
   } },
   crystal: { name: 'Кристаллы', size: 1.1, parts: () => {
     const g = new THREE.OctahedronGeometry(1, 0); g.scale(.55, 1.25, .55);
-    return [[g, new THREE.MeshPhysicalMaterial({ roughness: .06, metalness: .3, flatShading: true, clearcoat: 1, clearcoatRoughness: .05 }), true]];
+    return [[g, new THREE.MeshPhysicalMaterial({ roughness: .06, metalness: .3, flatShading: true, clearcoat: 1, clearcoatRoughness: .05 })]];
   } },
   ring: { name: 'Кольца', size: 1, parts: () =>
-    [[new THREE.TorusGeometry(.75, .27, 18, 44), std({ roughness: .16, metalness: 1 }), true]] },
+    [[new THREE.TorusGeometry(.75, .27, 24, 64), std({ roughness: .16, metalness: 1 })]] },
   pearl: { name: 'Жемчуг', size: .8, parts: () =>
-    [[new THREE.SphereGeometry(.8, 32, 20), new THREE.MeshPhysicalMaterial({ roughness: .28, metalness: .1, clearcoat: 1, clearcoatRoughness: .08 }), true]] },
+    [[new THREE.SphereGeometry(.8, 48, 32), new THREE.MeshPhysicalMaterial({ roughness: .28, metalness: .1, clearcoat: 1, clearcoatRoughness: .08 })]] },
   cube: { name: 'Кубы', size: .85, parts: () =>
-    [[new RoundedBoxGeometry(1.3, 1.3, 1.3, 5, .24), std({ roughness: .28, metalness: .45 }), true]] },
+    [[new RoundedBoxGeometry(1.3, 1.3, 1.3, 6, .24), std({ roughness: .28, metalness: .45 })]] },
 };
+
+const GRID = 8, FRAMES = GRID * GRID, CELL = 256;      // атлас 2048x2048: 64 кадра поворота
+const VERT = `
+attribute vec3 aPos;   // x, z, фаза
+attribute vec4 aRnd;   // размер, скорость вращения, сдвиг кадра, скорость кадров
+attribute vec3 aTint;
+uniform float uT, uDrift, uSize; uniform vec3 uHit;
+varying vec2 vA, vB; varying float vMix, vFog; varying vec3 vTint;
+const float Z0 = -34., ZL = 41., R = 2.6, G = ${GRID}., FR = ${FRAMES}.;
+vec2 cell(float f){ return vec2(mod(f, G), floor(f / G)); }
+void main(){
+  float x = aPos.x, z = mod(aPos.y + uDrift, ZL) + Z0;
+  float y = sin(x * .5 + uT * .6) * .3 + sin(z * .45 + uT * .5 + aPos.z * .15) * .35;
+  vec2 d = vec2(x, z) - uHit.xy; float dl = length(d);
+  float k = uHit.z * pow(max(0., 1. - dl / R), 2.);
+  vec2 dir = d / max(dl, .001); x += dir.x * k * 1.6; z += dir.y * k * 1.6; y += k * 1.1;
+  float fade = min(1., (z - Z0) / 5.) * clamp((Z0 + ZL - 2.2 - z) / 3.5, 0., 1.);
+  vec4 mv = viewMatrix * vec4(x, y, z, 1.);
+  float a = aPos.z + uT * aRnd.y, c = cos(a), s = sin(a);
+  mv.xy += mat2(c, s, -s, c) * position.xy * aRnd.x * uSize * fade;
+  gl_Position = projectionMatrix * mv;
+  float f = mod(aRnd.z * FR + uT * aRnd.w, FR), f0 = floor(f);
+  vA = (cell(f0) + uv) / G; vB = (cell(mod(f0 + 1., FR)) + uv) / G; vMix = f - f0;
+  float fd = .062 * length(mv.xyz); vFog = exp(-fd * fd); vTint = aTint;
+}`;
+const FRAG = `
+uniform sampler2D uMap; uniform vec3 uBg; uniform float uDim;
+varying vec2 vA, vB; varying float vMix, vFog; varying vec3 vTint;
+void main(){
+  vec4 t = mix(texture2D(uMap, vA), texture2D(uMap, vB), vMix);
+  if (t.a < .08) discard;
+  vec3 col = pow(clamp(t.rgb / t.a, 0., 1.), vec3(1. / 2.2)) * vTint;
+  gl_FragColor = vec4(mix(uBg, col, vFog * uDim), t.a);
+}`;
 
 const picker = document.getElementById('picker');
 try {
   const cv = document.getElementById('field');
   const mobile = innerWidth < 700;
+  let pr = Math.min(devicePixelRatio || 1, 1.5);
   const renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: true, powerPreference: 'high-performance' });
-  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, mobile ? 1.5 : 2));
-  renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
-
+  renderer.setPixelRatio(pr);
   const BG = new THREE.Color('#09090c');
-  const scene = new THREE.Scene(); scene.background = BG; scene.fog = new THREE.FogExp2(BG, .062);
-  scene.environment = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), .04).texture;
-  const key = new THREE.DirectionalLight(0xffffff, 2.4); key.position.set(4, 7, 3); scene.add(key);
-  const rim = new THREE.DirectionalLight(0xb9a8ff, 1.2); rim.position.set(-5, 2, -6); scene.add(rim);
+  renderer.setClearColor(BG, 1);
+  const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(50, 1, .1, 90);
 
-  const N = mobile ? 900 : 2600, XR = 24, Z0 = -34, ZL = 41;
-  const rnd = Math.random, P = Array.from({ length: N }, () => ({
-    x: (rnd() * 2 - 1) * XR, z: rnd() * ZL, s: .15 + rnd() * .22, ph: rnd() * 6.28,
-    rx: rnd() * 6.28, ry: rnd() * 6.28, rz: rnd() * 6.28, vx: (rnd() - .5) * .9, vy: (rnd() - .5) * .9, vz: (rnd() - .5) * .9,
-  }));
-  const tints = ['#f1ede4', '#f1ede4', '#f1ede4', '#f1ede4', '#ffffff', '#c8ff4d', '#b9a8ff'].map(c => new THREE.Color(c));
+  /* запекание формы в атлас */
+  const bakeScene = new THREE.Scene();
+  bakeScene.environment = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), .04).texture;
+  const key = new THREE.DirectionalLight(0xffffff, 1.8); key.position.set(3, 5, 4); bakeScene.add(key);
+  const rim = new THREE.DirectionalLight(0xb9a8ff, 1); rim.position.set(-4, -1, -3); bakeScene.add(rim);
+  const bakeCam = new THREE.OrthographicCamera(-1.4, 1.4, 1.4, -1.4, .1, 20); bakeCam.position.z = 6;
+  const tilt = new THREE.Group(), spin = new THREE.Group(); tilt.add(spin); bakeScene.add(tilt);
+  const atlas = new THREE.WebGLRenderTarget(GRID * CELL, GRID * CELL, { generateMipmaps: true, minFilter: THREE.LinearMipmapLinearFilter, magFilter: THREE.LinearFilter });
+  atlas.texture.anisotropy = 4;
 
-  let meshes = [], cur = null;
-  function build(type) {
-    if (!TYPES[type]) type = TYPE;
-    meshes.forEach(m => { scene.remove(m); m.geometry.dispose(); m.material.dispose(); });
-    cur = TYPES[type];
-    meshes = cur.parts().map(([geo, mat, tinted]) => {
-      const m = new THREE.InstancedMesh(geo, mat, N); m.frustumCulled = false;
-      if (tinted) for (let i = 0; i < N; i++) m.setColorAt(i, tints[(P[i].ph * 997 | 0) % tints.length]);
-      scene.add(m); return m;
-    });
-    picker.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.t === type));
-    try { localStorage.setItem('particles', type); } catch (e) {}
+  function bake(type) {
+    spin.children.slice().forEach(m => { spin.remove(m); m.geometry.dispose(); m.material.dispose(); });
+    type.parts().forEach(([g, m]) => spin.add(new THREE.Mesh(g, m)));
+    renderer.setRenderTarget(atlas); renderer.setClearColor(0x000000, 0);
+    renderer.setScissorTest(false); renderer.setViewport(0, 0, GRID * CELL, GRID * CELL); renderer.clear();
+    renderer.setScissorTest(true);
+    for (let i = 0; i < FRAMES; i++) {
+      const th = i / FRAMES * Math.PI * 2;
+      if (type.upright) { tilt.rotation.set(0, 0, 0); spin.rotation.set(Math.PI / 2 + Math.cos(th) * .5, 0, Math.sin(th) * .5); }
+      else { tilt.rotation.set(.55, 0, .4); spin.rotation.set(0, th, 0); }
+      const x = (i % GRID) * CELL, y = (i / GRID | 0) * CELL;
+      renderer.setViewport(x, y, CELL, CELL); renderer.setScissor(x, y, CELL, CELL);
+      renderer.render(bakeScene, bakeCam);
+    }
+    renderer.setScissorTest(false); renderer.setRenderTarget(null); renderer.setClearColor(BG, 1);
+    size();
+  }
+
+  /* поле: один вызов отрисовки */
+  const N = mobile ? 2200 : 6000, XR = 22, ZL = 41;
+  const rnd = Math.random, tints = [[.95, .93, .9], [.95, .93, .9], [.95, .93, .9], [1, 1, 1], [1, 1, 1], [.8, 1, .4], [.74, .68, 1], [.7, .95, .9]];
+  const aPos = new Float32Array(N * 3), aRnd = new Float32Array(N * 4), aTint = new Float32Array(N * 3);
+  for (let i = 0; i < N; i++) {
+    aPos.set([(rnd() * 2 - 1) * XR, rnd() * ZL, rnd() * 6.283], i * 3);
+    aRnd.set([.1 + rnd() * rnd() * .3, (rnd() - .5) * 1.2, rnd(), (rnd() < .5 ? -1 : 1) * (5 + rnd() * 9)], i * 4);
+    aTint.set(tints[rnd() * tints.length | 0], i * 3);
+  }
+  const quad = new THREE.PlaneGeometry(2.8, 2.8), geo = new THREE.InstancedBufferGeometry();
+  geo.index = quad.index; geo.setAttribute('position', quad.attributes.position); geo.setAttribute('uv', quad.attributes.uv);
+  geo.setAttribute('aPos', new THREE.InstancedBufferAttribute(aPos, 3));
+  geo.setAttribute('aRnd', new THREE.InstancedBufferAttribute(aRnd, 4));
+  geo.setAttribute('aTint', new THREE.InstancedBufferAttribute(aTint, 3));
+  geo.instanceCount = N;
+  const U = { uT: { value: 0 }, uDrift: { value: 0 }, uSize: { value: 1 }, uDim: { value: 1 }, uHit: { value: new THREE.Vector3() },
+              uMap: { value: atlas.texture }, uBg: { value: new THREE.Vector3(9 / 255, 9 / 255, 12 / 255) } };
+  const mat = new THREE.ShaderMaterial({ uniforms: U, vertexShader: VERT, fragmentShader: FRAG, alphaToCoverage: true });
+  const field = new THREE.Mesh(geo, mat); field.frustumCulled = false; scene.add(field);
+
+  function build(id) {
+    if (!TYPES[id]) id = TYPE;
+    bake(TYPES[id]); U.uSize.value = TYPES[id].size;
+    picker.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.t === id));
+    try { localStorage.setItem('particles', id); } catch (e) {}
     if (still) requestAnimationFrame(frame);
   }
-
   function size() {
     const W = innerWidth, H = innerHeight;
-    renderer.setSize(W, H, false); camera.aspect = W / H; camera.fov = W < H ? 66 : 50; camera.updateProjectionMatrix();
+    renderer.setPixelRatio(pr); renderer.setSize(W, H, false);
+    camera.aspect = W / H; camera.fov = W < H ? 66 : 50; camera.updateProjectionMatrix();
   }
 
-  const o = new THREE.Object3D(), ray = new THREE.Raycaster(), ground = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+  const ray = new THREE.Raycaster(), ground = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
   const ndc = new THREE.Vector2(9, 9), hit = new THREE.Vector3(), look = new THREE.Vector3();
-  let t = 0, last = 0, sc = 0, mx = 0, my = 0, hasHit = false;
+  let t = 0, last = 0, sc = 0, mx = 0, my = 0, hitK = 0, slow = 0, frames = 0;
 
   function frame(now) {
-    const dt = Math.min(.05, (now - last) / 1000 || 0); last = now; t += dt;
-    const target = scrollY / innerHeight; sc = still ? target : sc + (target - sc) * .07;
-    const s = Math.min(sc, 3), inside = ndc.x < 2;
+    const raw = (now - last) / 1000 || 0, dt = Math.min(.05, raw); last = now; t += dt;
+    const target = scrollY / innerHeight; sc = still ? target : sc + (target - sc) * .14;
+    const s = Math.min(sc, 1.6), inside = ndc.x < 2;
     mx += ((inside ? ndc.x : 0) - mx) * .04; my += ((inside ? ndc.y : 0) - my) * .04;
-    camera.position.set(mx * 1.4, 2.3 + s * 2.4 - my * .35, 6);
-    look.set(mx * .5, 1.05 - s * 1.6, -5 + s * 1.5); camera.lookAt(look);
-    cv.style.opacity = Math.max(.24, 1 - s * .7);
+    // при прокрутке камера ныряет под поле: оно уходит вверх и остаётся фоном
+    camera.position.set(mx * 1.4, 2.3 - s * 3.6 - my * .35, 6);
+    look.set(mx * .5, 1.05 - s * .5, -5); camera.lookAt(look);
+    U.uDim.value = Math.max(.3, 1 - Math.max(0, sc - .5) * .9);
+    U.uT.value = t; U.uDrift.value = t * .75;
 
-    hasHit = false;
-    if (inside) { ray.setFromCamera(ndc, camera); hasHit = !!ray.ray.intersectPlane(ground, hit); }
-    const drift = t * .75, R = 2.6;
-    for (let i = 0; i < N; i++) {
-      const p = P[i];
-      let z = ((p.z + drift) % ZL) + Z0, x = p.x;
-      let y = Math.sin(x * .5 + t * .6) * .3 + Math.sin(z * .45 + t * .5 + p.ph * .15) * .35;
-      if (hasHit) {                                   // частицы разлетаются от курсора
-        const dx = x - hit.x, dz = z - hit.z, d = Math.hypot(dx, dz);
-        if (d < R) { const k = (1 - d / R) ** 2, inv = 1 / (d || 1); x += dx * inv * k * 1.6; z += dz * inv * k * 1.6; y += k * 1.1; }
-      }
-      const fade = Math.min(1, (z - Z0) / 5) * Math.min(1, Math.max(0, Z0 + ZL - 2.2 - z) / 3.5);
-      o.position.set(x, y, z);
-      if (cur.upright) o.rotation.set(Math.sin(p.rx) * .5 + Math.sin(t * .9 + p.ph) * .16, p.ry + t * p.vy * .6, Math.sin(p.rz) * .5 + Math.cos(t * .8 + p.ph) * .16);
-      else o.rotation.set(p.rx + t * p.vx, p.ry + t * p.vy, p.rz + t * p.vz);
-      o.scale.setScalar(Math.max(.0001, p.s * cur.size * fade));
-      o.updateMatrix();
-      for (const m of meshes) m.setMatrixAt(i, o.matrix);
-    }
-    for (const m of meshes) m.instanceMatrix.needsUpdate = true;
+    let on = false;
+    if (inside) { ray.setFromCamera(ndc, camera); on = !!ray.ray.intersectPlane(ground, hit); }
+    hitK += ((on ? 1 : 0) - hitK) * .1;
+    if (on) U.uHit.value.set(hit.x, hit.z, hitK); else U.uHit.value.z = hitK;
     renderer.render(scene, camera);
+
+    // если кадры идут медленно, снижаем качество на ходу
+    if (!still && raw > 0 && ++frames > 40) {
+      slow = slow * .95 + raw * .05;
+      if (frames > 160 && slow > .024) {
+        if (pr > 1) { pr = 1; size(); } else if (geo.instanceCount > 1500) geo.instanceCount = geo.instanceCount * .7 | 0;
+        frames = 40; slow = .016;
+      }
+    }
     if (!still) requestAnimationFrame(frame);
   }
 
@@ -418,6 +480,7 @@ try {
 
   let saved = null; try { saved = localStorage.getItem('particles'); } catch (e) {}
   size(); build(new URLSearchParams(location.search).get('p') || saved || TYPE);
+  window.__field = { get count() { return geo.instanceCount; }, get pr() { return pr; }, get ms() { return slow * 1000; } };
   if (!still) requestAnimationFrame(frame);
 } catch (e) {
   console.error(e); picker.remove();
