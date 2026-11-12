@@ -75,6 +75,29 @@ section{padding:clamp(72px,11vw,150px) var(--pad)}
 .card:hover .arrow{background:var(--accent);color:#09090c;border-color:var(--accent);transform:rotate(-45deg)}
 
 
+/* что я делаю */
+.marquee{overflow:hidden;border-block:1px solid var(--line);padding:20px 0;margin-bottom:clamp(48px,7vw,96px);-webkit-mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent);mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent)}
+.marquee div{display:flex;gap:36px;width:max-content;animation:mq 32s linear infinite;font:700 clamp(17px,2.3vw,30px)/1 Unbounded,sans-serif;text-transform:lowercase;white-space:nowrap}
+.marquee i{font-style:normal;color:var(--accent)}
+@keyframes mq{to{transform:translateX(-50%)}}
+#skills{padding-inline:0}
+#skills .wrap{padding-inline:var(--pad);max-width:calc(1240px + var(--pad)*2)}
+.skills{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));gap:16px}
+.skill{position:relative;overflow:hidden;background:linear-gradient(160deg,#15151d,#0c0c12);border:1px solid var(--line);border-radius:20px;padding:26px 24px 24px;transition:transform .35s,border-color .35s}
+.skill::before{content:"";position:absolute;inset:0;background:radial-gradient(380px circle at var(--mx,50%) var(--my,0%),rgba(200,255,77,.14),transparent 55%);opacity:0;transition:opacity .35s;pointer-events:none}
+.skill:hover{transform:translateY(-6px);border-color:rgba(200,255,77,.45)}
+.skill:hover::before{opacity:1}
+.skill>*{position:relative}
+.skill .n{position:absolute;top:24px;right:24px;font:500 12px Unbounded,sans-serif;color:var(--mute)}
+.ico{width:52px;height:52px;border-radius:14px;border:1px solid var(--line);display:grid;place-items:center;margin-bottom:24px;transition:background .35s,color .35s,border-color .35s}
+.ico svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.skill:hover .ico{background:var(--accent);color:#09090c;border-color:var(--accent)}
+.skill h3{font-size:17px;margin-bottom:10px}
+.skill p{color:var(--mute);font-size:14px;margin-bottom:20px}
+.tags{display:flex;flex-wrap:wrap;gap:6px}
+.tags span{font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:5px 10px;border-radius:999px;border:1px solid var(--line);color:var(--mute)}
+.calm .marquee div{animation:none}
+
 /* процесс */
 .steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:28px}
 .step{border-top:1px solid var(--line);padding-top:20px;transition:border-color .3s}
@@ -110,6 +133,7 @@ footer{padding:24px var(--pad);text-align:center;color:var(--mute);font-size:12p
 
 <header id="top" class="intro i0">
   <nav>
+    <a class="link" href="#skills">Что делаю</a>
     <a class="link" href="#works">Работы</a>
     <a class="link" href="#process">Как работаю</a>
     <a class="btn" data-h="contact" href="#" target="_blank" rel="noopener">Написать</a>
@@ -120,25 +144,36 @@ footer{padding:24px var(--pad);text-align:center;color:var(--mute);font-size:12p
   <section class="hero">
     <h1 class="intro i1" data-t="title"></h1>
     <p class="intro i2" data-t="subtitle"></p>
-    <a class="scroll intro i3" href="#works" aria-label="Вниз">↓</a>
+    <a class="scroll intro i3" href="#skills" aria-label="Вниз">↓</a>
+  </section>
+
+  <section id="skills">
+    <div class="marquee rv" aria-hidden="true"><div id="marquee"></div></div>
+    <div class="wrap">
+      <div class="head rv">
+        <div><span class="label">01 / направления</span><h2>что я делаю</h2></div>
+        <p data-t="skillsNote"></p>
+      </div>
+      <div class="skills" id="skillsGrid"></div>
+    </div>
   </section>
 
   <section id="works"><div class="wrap">
     <div class="head rv">
-      <div><span class="label">01 / портфолио</span><h2>мои работы</h2></div>
+      <div><span class="label">02 / портфолио</span><h2>мои работы</h2></div>
     </div>
     <div class="grid" id="grid"></div>
   </div></section>
 
   <section id="process"><div class="wrap">
     <div class="head rv">
-      <div><span class="label">02 / процесс</span><h2>как я работаю</h2></div>
+      <div><span class="label">03 / процесс</span><h2>как я работаю</h2></div>
     </div>
     <div class="steps" id="steps"></div>
   </div></section>
 
   <section class="cta" id="contact">
-    <span class="label rv">03 / контакты</span>
+    <span class="label rv">04 / контакты</span>
     <h2 class="rv">есть проект?</h2>
     <p class="rv" data-t="ctaNote"></p>
     <div class="btns rv" id="links"></div>
@@ -152,6 +187,13 @@ const DATA = {
   subtitle: 'ИИ пишет быстро. Что именно писать - решает человек',
   contact: 'https://t.me/Veertyy',         // ссылка кнопки «Написать»
   ctaNote: 'Напишите в Telegram - обсудим задачу.',
+  skillsNote: 'От идеи до работающего проекта: делаю, размещаю и сопровождаю.',
+  skills: [  // icon: site | bot | code | server
+    { icon: 'site', title: 'Сайты', text: 'Лендинги, портфолио и сайты для бизнеса с адаптацией под телефон.', tags: ['дизайн', 'вёрстка', 'анимации'] },
+    { icon: 'bot', title: 'Telegram-боты', text: 'Боты для заявок, уведомлений, расписаний и рутинных задач.', tags: ['заявки', 'уведомления', 'рассылки'] },
+    { icon: 'code', title: 'Парсеры', text: 'Сбор данных с сайтов по фильтрам и выгрузка в таблицу.', tags: ['сбор данных', 'Excel', 'автоматизация'] },
+    { icon: 'server', title: 'Хостинг и VPS', text: 'Размещаю проект, настраиваю сервер и слежу, чтобы всё работало.', tags: ['размещение', 'настройка', 'управление'] },
+  ],
   works: [  // img - обложка из папки works; label - текст вместо обложки; url - куда ведёт карточка
     { title: 'Сакартвело', text: 'Сайт грузинского ресторана: меню, вина, бронирование столика.', img: 'works/sakartvelo.jpg', url: 'https://wroko141-spec.github.io/sakartvelo/' },
     { title: 'Пион', text: 'Демо-сайт студии красоты.', img: 'works/pion.jpg', url: 'https://wroko141-spec.github.io/pion/' },
@@ -191,6 +233,24 @@ $('#grid').innerHTML = DATA.works.map((w, i) => {
     <div class="meta"><div><h3>${esc(w.title)}</h3><p>${esc(w.text)}</p></div><span class="arrow">→</span></div>
   </a>`;
 }).join('');
+
+const ICONS = {
+  site: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M6.5 6.5h.01M9.5 6.5h.01"/>',
+  bot: '<path d="M21 3 10 14M21 3l-7 18-4-7-7-4z"/>',
+  code: '<path d="M8 6 3 12l5 6M16 6l5 6-5 6M13.5 4l-3 16"/>',
+  server: '<rect x="3" y="4" width="18" height="7" rx="2"/><rect x="3" y="13" width="18" height="7" rx="2"/><path d="M7 7.5h.01M7 16.5h.01M11 7.5h6M11 16.5h6"/>',
+};
+$('#skillsGrid').innerHTML = DATA.skills.map((s, i) => `<div class="skill rv">
+  <span class="n">${String(i + 1).padStart(2, '0')}</span>
+  <div class="ico"><svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[s.icon] || ''}</svg></div>
+  <h3>${esc(s.title)}</h3><p>${esc(s.text)}</p>
+  <div class="tags">${s.tags.map(t => `<span>${esc(t)}</span>`).join('')}</div></div>`).join('');
+const mq = DATA.skills.flatMap(s => [s.title, ...s.tags.slice(0, 2)]).map(t => `<span>${esc(t)}</span><i>✦</i>`).join('');
+$('#marquee').innerHTML = mq + mq;                   // два одинаковых ряда = бесшовная лента
+$('#skillsGrid').addEventListener('pointermove', e => {   // свечение карточки идёт за курсором
+  const c = e.target.closest('.skill'); if (!c) return;
+  const r = c.getBoundingClientRect(); c.style.setProperty('--mx', e.clientX - r.left + 'px'); c.style.setProperty('--my', e.clientY - r.top + 'px');
+}, { passive: true });
 
 $('#steps').innerHTML = DATA.steps.map((s, i) => `<div class="step rv">
   <div class="num">${String(i + 1).padStart(2, '0')}</div><h3>${esc(s.title)}</h3><p>${esc(s.text)}</p></div>`).join('');
