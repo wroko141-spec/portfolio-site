@@ -266,15 +266,15 @@ document.addEventListener('click', e => {
 <script type="module">
 /* ====== НАСТРОЙКИ ФОНА ====== */
 const BG = {
-  density: 1,            // плотность цветов: 0.5 - вдвое меньше, 1.5 - в полтора раза больше
-  countDesktop: 9000,    // цветов на ПК при density = 1
-  countMobile: 3200,     // цветов на телефоне
-  flowerSize: 1,         // размер цветов
+  density: 1,            // плотность частиц: 0.5 - вдвое меньше, 1.5 - в полтора раза больше
+  countDesktop: 9000,    // частиц на ПК при density = 1
+  countMobile: 3200,     // частиц на телефоне
+  flowerSize: 1,         // размер частиц
   swayAmp: 1,            // амплитуда покачивания (0 - стоят неподвижно)
   swaySpeed: 1,          // скорость покачивания
   waveAmp: 1,            // высота бегущих по полю волн
   waveSpeed: 1,          // скорость волн
-  spin: 1,               // вращение цветков вокруг своей оси
+  spin: 1,               // вращение частиц вокруг своей оси
   idleDrift: 0.55,       // постоянный полёт над полем без прокрутки (0 - выключить)
   cameraSpeed: 7,        // сколько камера пролетает вперёд за один экран прокрутки
   rise: 5.4,             // насколько поле уходит вверх при прокрутке (0 - остаётся внизу)
@@ -287,7 +287,6 @@ const BG = {
   maxPixelRatio: 1.5,    // потолок чёткости (качество)
   adaptive: true,        // подстраивать качество при долгой просадке FPS (false - никогда не трогать)
   minFps: 30,            // ниже этого FPS (дольше 3 с) качество слегка снижается, но не больше чем до 60% частиц
-  particle: 'flowers',   // форма: flowers | daisy | sakura | sparkle | star | snow | heart | butterfly | crystal | bubble | flare | diamond | burst | cross | hexstar
   dust: 600,             // мини-частицы в небе (0 - выключить)
   glow: 1,               // сила лунного свечения (0 - выключить)
   glowColor: [0.046, 0.037, 0.105], // цвет свечения (R, G, B от 0 до 1)
@@ -326,7 +325,7 @@ document.addEventListener('click', e => {
 });
 if (location.hash.length > 1) { const el = document.querySelector(location.hash); if (el) goTo(el, true); }
 
-/* --- цветочное поле --- */
+/* --- поле частиц --- */
 const VERT = `
 attribute vec3 aPos;    // x, z, фаза
 attribute vec4 aRnd;    // размер, вид цветка, скорость покачивания, высота стебля
@@ -409,112 +408,15 @@ void main(){
   gl_FragColor = vec4(mix(sky(gl_FragCoord.xy), col, vFog * uDim), a);
 }`;
 
-/* --- формы частиц: каждая рисует два спрайта (k = 0 и 1) в атлас --- */
+/* --- форма частиц: рисует два спрайта (k = 0 и 1) в атлас --- */
 const TAU = Math.PI * 2;
-const lin = (g, y0, y1, ...st) => { const gr = g.createLinearGradient(0, y0, 0, y1); st.forEach((c, i) => gr.addColorStop(i / (st.length - 1), c)); return gr; };
-const dot = (g, r, c0, c1) => { const cg = g.createRadialGradient(-r * .3, -r * .3, r * .1, 0, 0, r); cg.addColorStop(0, c0); cg.addColorStop(1, c1); g.fillStyle = cg; g.beginPath(); g.arc(0, 0, r, 0, TAU); g.fill(); };
-function petals(g, n, R, w, l, fill) {
-  for (let i = 0; i < n; i++) {
-    g.save(); g.rotate(i / n * TAU); g.fillStyle = fill; g.shadowColor = 'rgba(40,48,66,.5)'; g.shadowBlur = 16;
-    g.beginPath(); g.ellipse(0, -R * (1 - l), R * w, R * l, 0, 0, TAU); g.fill(); g.restore();
-  }
-}
 const W3 = [[1, 1, 1], [1, 1, 1], [1, 1, 1]];
 const SHAPES = {
-  flowers: { name: 'Цветы на стеблях', stems: 1,
-    tints: [...W3, ...W3, [1, 1, 1], [1, .97, .92], [1, .97, .92], [1, .97, .92], [1, .91, .94], [.89, .98, .94]],
-    draw(g, k, R) { petals(g, k ? 6 : 5, R, k ? .3 : .36, .44, lin(g, -R * .12, -R, '#c9ced6', '#f1f2f4', '#ffffff', '#ffffff')); dot(g, R * .17, '#f4ecc0', '#bfb277'); } },
-  daisy: { name: 'Ромашки', stems: 1, tints: [...W3, [1, .98, .94]],
-    draw(g, k, R) { petals(g, k ? 17 : 13, R, k ? .085 : .105, .4, lin(g, -R * .2, -R, '#d5d9df', '#ffffff', '#ffffff')); dot(g, R * .25, '#ffe27a', '#d19a1e'); } },
-  sakura: { name: 'Сакура', stems: 0, tints: [...W3, [1, .93, .96], [1, .86, .92]],
-    draw(g, k, R) {
-      for (let i = 0; i < 5; i++) {
-        g.save(); g.rotate(i / 5 * TAU + k * .3); g.fillStyle = lin(g, 0, -R, '#ff8fb5', '#ffc4d8', '#fff1f6'); g.shadowColor = 'rgba(120,30,70,.45)'; g.shadowBlur = 14;
-        g.beginPath(); g.moveTo(0, -R * .08); g.bezierCurveTo(R * .52, -R * .3, R * .44, -R * .95, R * .1, -R); g.lineTo(0, -R * .84); g.lineTo(-R * .1, -R);
-        g.bezierCurveTo(-R * .44, -R * .95, -R * .52, -R * .3, 0, -R * .08); g.fill(); g.restore();
-      }
-      dot(g, R * .1, '#ff7aa6', '#c93a70');
-    } },
-  sparkle: { name: 'Искры', stems: 0, size: .85, tints: [...W3, [.86, .83, 1], [.8, .95, 1]],
-    draw(g, k, R) {
+  sparkle: { name: 'Искры', stems: 0, size: .85, tints: [...W3, [.86, .83, 1], [.8, .95, 1]],   // tints - оттенки (R, G, B)
+    draw(g, k, R) {      // k = 0: четыре луча, k = 1: восемь
       const n = k ? 8 : 4, P = i => { const a = i / n * TAU, r = k && i % 2 ? R * .45 : R; return [Math.sin(a) * r, -Math.cos(a) * r]; };
       const C = i => { const a = (i + .5) / n * TAU; return [Math.sin(a) * R * .1, -Math.cos(a) * R * .1]; };
       const rg = g.createRadialGradient(0, 0, 0, 0, 0, R); rg.addColorStop(0, '#ffffff'); rg.addColorStop(1, '#cfd6ff');
-      g.fillStyle = rg; g.beginPath(); g.moveTo(...P(0)); for (let i = 1; i <= n; i++) g.quadraticCurveTo(...C(i - 1), ...P(i % n)); g.fill();
-    } },
-  star: { name: 'Звёзды', stems: 0, tints: [...W3, [1, .95, .75], [1, .9, .6]],
-    draw(g, k, R) {
-      const n = k ? 6 : 5; g.fillStyle = g.strokeStyle = lin(g, -R, R, '#ffffff', '#ffeeb8'); g.lineJoin = 'round'; g.lineWidth = R * .16;
-      g.beginPath(); for (let i = 0; i < n * 2; i++) { const a = i / n * Math.PI, r = i % 2 ? R * .4 : R * .88; g.lineTo(Math.sin(a) * r, -Math.cos(a) * r); }
-      g.closePath(); g.fill(); g.stroke();
-    } },
-  snow: { name: 'Снежинки', stems: 0, tints: [...W3, [.85, .93, 1]],
-    draw(g, k, R) {
-      g.strokeStyle = '#ffffff'; g.lineCap = 'round'; g.lineWidth = R * .085;
-      for (let i = 0; i < 6; i++) {
-        g.save(); g.rotate(i / 6 * TAU); g.beginPath(); g.moveTo(0, 0); g.lineTo(0, -R * .95);
-        for (const h of k ? [.35, .6, .8] : [.45, .72]) { g.moveTo(0, -R * h); g.lineTo(R * .2, -R * (h + .18)); g.moveTo(0, -R * h); g.lineTo(-R * .2, -R * (h + .18)); }
-        g.stroke(); g.restore();
-      }
-    } },
-  heart: { name: 'Сердечки', stems: 0, tints: [...W3, [1, .72, .82], [1, .48, .62]],
-    draw(g, k, R) {
-      g.rotate(k ? .25 : -.1); g.fillStyle = lin(g, -R * .8, R * .8, '#ffffff', '#f0d2dc'); g.shadowColor = 'rgba(90,20,50,.4)'; g.shadowBlur = 14;
-      g.beginPath(); g.moveTo(0, R * .8); g.bezierCurveTo(-R * 1.3, -R * .05, -R * .62, -R * 1.02, 0, -R * .38); g.bezierCurveTo(R * .62, -R * 1.02, R * 1.3, -R * .05, 0, R * .8); g.fill();
-    } },
-  butterfly: { name: 'Бабочки', stems: 0, tints: [...W3, [.8, .85, 1], [1, .85, .95], [.85, 1, .95]],
-    draw(g, k, R) {
-      for (const s of [-1, 1]) {
-        g.fillStyle = lin(g, -R * .7, R * .1, '#ffffff', '#d7dcee'); g.beginPath(); g.ellipse(s * R * .48, -R * .26, R * .5, R * (k ? .3 : .36), s * -.5, 0, TAU); g.fill();
-        g.fillStyle = '#e4e8f4'; g.beginPath(); g.ellipse(s * R * .36, R * .36, R * .32, R * .25, s * .6, 0, TAU); g.fill();
-        if (k) { g.fillStyle = '#9aa3c4'; g.beginPath(); g.arc(s * R * .6, -R * .3, R * .09, 0, TAU); g.fill(); }
-      }
-      g.fillStyle = '#343a4e'; g.beginPath(); g.ellipse(0, 0, R * .055, R * .44, 0, 0, TAU); g.fill();
-    } },
-  crystal: { name: 'Кристаллы', stems: 0, tints: [...W3, [.8, .75, 1], [.7, .95, 1]],
-    draw(g, k, R) {
-      const n = k ? 6 : 4, sh = ['#ffffff', '#cdd2ea', '#9aa1c8', '#e3e6f6', '#b7bddc', '#f4f5fb'];
-      const V = i => { const a = i / n * TAU; return [Math.sin(a) * R * (k ? .8 : (i % 2 ? .56 : 1)), -Math.cos(a) * R * (k ? .8 : (i % 2 ? .56 : 1))]; };
-      for (let i = 0; i < n; i++) { g.fillStyle = sh[i % sh.length]; g.beginPath(); g.moveTo(0, 0); g.lineTo(...V(i)); g.lineTo(...V((i + 1) % n)); g.fill(); }
-    } },
-  bubble: { name: 'Пузыри', stems: 0, tints: [...W3, [.8, .9, 1], [.9, .8, 1]],
-    draw(g, k, R) {
-      const r = R * (k ? .62 : .84); g.fillStyle = 'rgba(255,255,255,.16)'; g.beginPath(); g.arc(0, 0, r, 0, TAU); g.fill();
-      g.strokeStyle = 'rgba(255,255,255,.95)'; g.lineWidth = R * .085; g.stroke();
-      g.lineCap = 'round'; g.beginPath(); g.arc(0, 0, r * .66, -2.5, -1.6); g.stroke();
-    } },
-  flare: { name: 'Блики', stems: 0, size: 1.1, tints: [...W3, [.86, .83, 1], [.75, .8, 1]],
-    draw(g, k, R) {
-      const ray = (len, w) => { g.beginPath(); for (const [x, y] of [[0, -len], [w, -w], [len, 0], [w, w], [0, len], [-w, w], [-len, 0], [-w, -w]]) g.lineTo(x, y); g.fill(); };   // тонкие прямые лучи
-      g.fillStyle = '#ffffff'; ray(R, R * .05); if (k) { g.rotate(Math.PI / 4); ray(R * .5, R * .04); g.rotate(-Math.PI / 4); }
-      dot(g, R * .12, '#ffffff', '#dfe4ff');
-    } },
-  diamond: { name: 'Алмазные искры', stems: 0, size: .85, tints: [...W3, [.75, .95, 1], [.8, 1, .92]],
-    draw(g, k, R) {
-      const n = 4, inner = k ? .2 : .3;
-      for (let i = 0; i < n * 2; i++) {            // грани разной яркости
-        const a0 = i / n * Math.PI, a1 = (i + 1) / n * Math.PI, r0 = i % 2 ? R * inner : R, r1 = i % 2 ? R : R * inner;
-        g.fillStyle = ['#ffffff', '#c9d1ee', '#eef1fb', '#aab4dc'][i % 4];
-        g.beginPath(); g.moveTo(0, 0); g.lineTo(Math.sin(a0) * r0, -Math.cos(a0) * r0); g.lineTo(Math.sin(a1) * r1, -Math.cos(a1) * r1); g.fill();
-      }
-    } },
-  burst: { name: 'Вспышки', stems: 0, size: .95, tints: [...W3, [1, .95, .78], [1, .88, .62]],
-    draw(g, k, R) {
-      const n = k ? 12 : 8; g.fillStyle = '#ffffff'; g.beginPath();
-      for (let i = 0; i < n * 2; i++) { const a = i / n * Math.PI, r = i % 2 ? R * .16 : R * (i % 4 ? .62 : 1); g.lineTo(Math.sin(a) * r, -Math.cos(a) * r); }
-      g.closePath(); g.fill(); dot(g, R * .2, '#ffffff', '#fff1c4');
-    } },
-  cross: { name: 'Крестики', stems: 0, size: .7, tints: [...W3, [1, .78, .9], [.85, .8, 1]],
-    draw(g, k, R) {
-      if (k) g.rotate(Math.PI / 4);
-      g.strokeStyle = lin(g, -R, R, '#ffffff', '#d9dcf0'); g.lineCap = 'round'; g.lineWidth = R * (k ? .2 : .26);
-      g.beginPath(); g.moveTo(0, -R * .8); g.lineTo(0, R * .8); g.moveTo(-R * .8, 0); g.lineTo(R * .8, 0); g.stroke();
-    } },
-  hexstar: { name: 'Шестилучевые искры', stems: 0, size: .9, tints: [...W3, [.8, .9, 1], [.9, .82, 1], [1, .9, .96]],
-    draw(g, k, R) {
-      const n = 6, P = i => { const a = i / n * TAU, r = k && i % 2 ? R * .6 : R; return [Math.sin(a) * r, -Math.cos(a) * r]; };
-      const C = i => { const a = (i + .5) / n * TAU; return [Math.sin(a) * R * .13, -Math.cos(a) * R * .13]; };
-      const rg = g.createRadialGradient(0, 0, 0, 0, 0, R); rg.addColorStop(0, '#ffffff'); rg.addColorStop(1, '#d4dcff');
       g.fillStyle = rg; g.beginPath(); g.moveTo(...P(0)); for (let i = 1; i <= n; i++) g.quadraticCurveTo(...C(i - 1), ...P(i % n)); g.fill();
     } },
 };
@@ -544,7 +446,7 @@ function plantGeometry(THREE) {      // стебель + 2 листа + цвет
 async function createField() {
   const THREE = await import('three');
   const cv = document.getElementById('field'), q = new URLSearchParams(location.search);
-  const shape = SHAPES[q.get('p')] || SHAPES[BG.particle] || SHAPES.flowers;
+  const shape = SHAPES.sparkle;
   const fixed = q.get('q') === 'fixed' || !BG.adaptive;
   const renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: true, powerPreference: 'high-performance', stencil: false });
   const gl = renderer.getContext(), dbg = gl.getExtension('WEBGL_debug_renderer_info');
