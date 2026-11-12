@@ -19,7 +19,9 @@
   --pad:clamp(16px,5vw,72px);
 }
 *{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth}
+html.lenis,html.lenis body{height:auto}
+.lenis.lenis-smooth{scroll-behavior:auto!important}
+.lenis.lenis-stopped{overflow:hidden}
 body{background:var(--bg);color:var(--text);font:400 16px/1.55 Manrope,system-ui,sans-serif;overflow-x:hidden;-webkit-font-smoothing:antialiased}
 a{color:inherit;text-decoration:none}
 h1,h2,h3,.num,.logo{font-family:Tektur,Manrope,sans-serif;font-weight:800;letter-spacing:-.01em;line-height:1}
@@ -44,7 +46,7 @@ nav a.link:hover{color:var(--text)}
 .hero h1{font-size:clamp(40px,9.5vw,136px);text-transform:lowercase;text-shadow:0 0 60px rgba(9,9,12,.9)}
 .hero h1 em{font-style:normal;color:var(--accent)}
 .hero p{margin-top:20px;max-width:440px;color:var(--mute);font-size:clamp(14px,1.4vw,17px)}
-.scroll{position:absolute;bottom:28px;left:50%;width:36px;height:36px;margin-left:-18px;border:1px solid var(--line);border-radius:50%;display:grid;place-items:center;color:var(--mute);animation:bob 2s ease-in-out infinite}
+.scroll{position:absolute;bottom:92px;left:50%;width:36px;height:36px;margin-left:-18px;border:1px solid var(--line);border-radius:50%;display:grid;place-items:center;color:var(--mute);animation:bob 2s ease-in-out infinite}
 @keyframes bob{50%{transform:translateY(6px)}}
 
 /* секции */
@@ -100,10 +102,17 @@ section{padding:clamp(72px,11vw,150px) var(--pad)}
 .cta .btns{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
 footer{padding:24px var(--pad);text-align:center;color:var(--mute);font-size:12px;border-top:1px solid var(--line)}
 
+/* выбор частиц */
+.picker{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:9;display:flex;align-items:center;gap:6px;max-width:calc(100vw - 24px);overflow-x:auto;padding:6px;border-radius:999px;background:rgba(17,17,22,.8);border:1px solid var(--line);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);scrollbar-width:none}
+.picker span{padding:0 8px 0 12px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute);white-space:nowrap}
+.picker button{padding:8px 14px;border-radius:999px;border:0;background:none;color:var(--mute);font:500 13px Manrope,sans-serif;cursor:pointer;white-space:nowrap;transition:.2s}
+.picker button:hover{color:var(--text)}
+.picker button.on{background:var(--accent);color:#09090c}
+
 /* появление */
 .rv{opacity:0;transform:translateY(26px);transition:opacity .7s,transform .7s cubic-bezier(.2,.7,.2,1)}
 .rv.in{opacity:1;transform:none}
-@media(prefers-reduced-motion:reduce){.rv{opacity:1;transform:none;transition:none}.scroll{animation:none}html{scroll-behavior:auto}}
+@media(prefers-reduced-motion:reduce){.rv{opacity:1;transform:none;transition:none}.scroll{animation:none}}
 </style>
 </head>
 <body>
@@ -243,75 +252,176 @@ const io = new IntersectionObserver(es => es.forEach(e => {
 }), { threshold: .12 });
 document.querySelectorAll('.rv').forEach((e, i) => { e.style.transitionDelay = (i % 4) * 70 + 'ms'; io.observe(e); });
 
-/* ====== поле частиц ====== */
-(() => {
-  const cv = $('#field'), g = cv.getContext('2d');
-  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const ZR = 22, XR = 15;
-  let W, H, D, parts = [], t = 0, sc = 0, mx = 0, my = 0, px = -1e4, py = -1e4, last = 0;
+/* шапка и ссылки-заглушки */
+addEventListener('scroll', () => $('#top').classList.toggle('solid', scrollY > 40), { passive: true });
+document.addEventListener('click', e => {
+  const a = e.target.closest('a[href="#"]');
+  if (a && !a.classList.contains('logo')) e.preventDefault();
+});
+</script>
 
-  function sprite(color) {
-    const s = 64, c = document.createElement('canvas'); c.width = c.height = s;
-    const x = c.getContext('2d'), m = s / 2;
-    const glow = x.createRadialGradient(m, m, 0, m, m, m);
-    glow.addColorStop(0, color + 'aa'); glow.addColorStop(.35, color + '22'); glow.addColorStop(1, color + '00');
-    x.fillStyle = glow; x.fillRect(0, 0, s, s);
-    x.fillStyle = color; x.beginPath();               // четырёхлучевая искра
-    for (let i = 0; i < 8; i++) {
-      const a = i * Math.PI / 4, r = i % 2 ? 4 : 26;
-      x.lineTo(m + Math.cos(a) * r, m + Math.sin(a) * r);
+<div class="picker" id="picker"><span>частицы</span></div>
+
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}
+</script>
+<script type="module">
+const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ====== плавная прокрутка ====== */
+let lenis = null;
+if (!still) (async () => {
+  try {
+    const { default: Lenis } = await import('https://cdn.jsdelivr.net/npm/lenis@1.1.14/dist/lenis.mjs');
+    lenis = new Lenis({ lerp: 0.085, wheelMultiplier: 1, smoothWheel: true });
+    const raf = t => { lenis.raf(t); requestAnimationFrame(raf); };
+    requestAnimationFrame(raf);
+    document.addEventListener('click', e => {
+      const a = e.target.closest('a[href^="#"]'); if (!a) return;
+      const id = a.getAttribute('href');
+      if (id === '#') { if (a.classList.contains('logo')) { e.preventDefault(); lenis.scrollTo(0, { duration: 1.4 }); } return; }
+      const el = document.querySelector(id); if (!el) return;
+      e.preventDefault(); lenis.scrollTo(el, { offset: -50, duration: 1.5 });
+    });
+  } catch (e) { document.documentElement.style.scrollBehavior = 'smooth'; }
+})();
+
+/* ====== 3D-поле частиц ====== */
+import * as THREE from 'three';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+
+const TYPE = 'flower';   // форма по умолчанию: flower | star | crystal | ring | pearl | cube
+
+const std = o => new THREE.MeshStandardMaterial(o);
+const TYPES = {
+  flower: { name: 'Цветы', upright: true, size: 1.15, parts: () => {
+    const sh = new THREE.Shape(), n = 100;
+    for (let i = 0; i <= n; i++) {
+      const a = i / n * Math.PI * 2, r = .3 + .7 * Math.pow(Math.abs(Math.cos(2.5 * a)), .7);
+      i ? sh.lineTo(Math.cos(a) * r, Math.sin(a) * r) : sh.moveTo(Math.cos(a) * r, Math.sin(a) * r);
     }
-    x.closePath(); x.fill();
-    return c;
+    const g = new THREE.ExtrudeGeometry(sh, { depth: .04, bevelEnabled: true, bevelThickness: .035, bevelSize: .035, bevelSegments: 2 });
+    const p = g.attributes.position;
+    for (let i = 0; i < p.count; i++) { const x = p.getX(i), y = p.getY(i); p.setZ(i, p.getZ(i) + .42 * (x * x + y * y)); }
+    g.rotateX(-Math.PI / 2); g.computeVertexNormals();
+    const c = new THREE.SphereGeometry(.2, 16, 12); c.translate(0, .13, 0);
+    return [[g, std({ roughness: .5, metalness: 0, side: THREE.DoubleSide }), true],
+            [c, std({ color: '#c8ff4d', roughness: .35, emissive: '#5a7a10', emissiveIntensity: .6 }), false]];
+  } },
+  star: { name: 'Звёзды', size: 1, parts: () => {
+    const sh = new THREE.Shape();
+    for (let i = 0; i < 10; i++) { const a = i * Math.PI / 5 + Math.PI / 2, r = i % 2 ? .47 : 1; i ? sh.lineTo(Math.cos(a) * r, Math.sin(a) * r) : sh.moveTo(Math.cos(a) * r, Math.sin(a) * r); }
+    const g = new THREE.ExtrudeGeometry(sh, { depth: .2, bevelEnabled: true, bevelThickness: .14, bevelSize: .12, bevelSegments: 4 });
+    g.center();
+    return [[g, std({ roughness: .22, metalness: .65 }), true]];
+  } },
+  crystal: { name: 'Кристаллы', size: 1.1, parts: () => {
+    const g = new THREE.OctahedronGeometry(1, 0); g.scale(.55, 1.25, .55);
+    return [[g, new THREE.MeshPhysicalMaterial({ roughness: .06, metalness: .3, flatShading: true, clearcoat: 1, clearcoatRoughness: .05 }), true]];
+  } },
+  ring: { name: 'Кольца', size: 1, parts: () =>
+    [[new THREE.TorusGeometry(.75, .27, 18, 44), std({ roughness: .16, metalness: 1 }), true]] },
+  pearl: { name: 'Жемчуг', size: .8, parts: () =>
+    [[new THREE.SphereGeometry(.8, 32, 20), new THREE.MeshPhysicalMaterial({ roughness: .28, metalness: .1, clearcoat: 1, clearcoatRoughness: .08 }), true]] },
+  cube: { name: 'Кубы', size: .85, parts: () =>
+    [[new RoundedBoxGeometry(1.3, 1.3, 1.3, 5, .24), std({ roughness: .28, metalness: .45 }), true]] },
+};
+
+const picker = document.getElementById('picker');
+try {
+  const cv = document.getElementById('field');
+  const mobile = innerWidth < 700;
+  const renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: true, powerPreference: 'high-performance' });
+  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, mobile ? 1.5 : 2));
+  renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
+
+  const BG = new THREE.Color('#09090c');
+  const scene = new THREE.Scene(); scene.background = BG; scene.fog = new THREE.FogExp2(BG, .062);
+  scene.environment = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), .04).texture;
+  const key = new THREE.DirectionalLight(0xffffff, 2.4); key.position.set(4, 7, 3); scene.add(key);
+  const rim = new THREE.DirectionalLight(0xb9a8ff, 1.2); rim.position.set(-5, 2, -6); scene.add(rim);
+  const camera = new THREE.PerspectiveCamera(50, 1, .1, 90);
+
+  const N = mobile ? 900 : 2600, XR = 24, Z0 = -34, ZL = 41;
+  const rnd = Math.random, P = Array.from({ length: N }, () => ({
+    x: (rnd() * 2 - 1) * XR, z: rnd() * ZL, s: .15 + rnd() * .22, ph: rnd() * 6.28,
+    rx: rnd() * 6.28, ry: rnd() * 6.28, rz: rnd() * 6.28, vx: (rnd() - .5) * .9, vy: (rnd() - .5) * .9, vz: (rnd() - .5) * .9,
+  }));
+  const tints = ['#f1ede4', '#f1ede4', '#f1ede4', '#f1ede4', '#ffffff', '#c8ff4d', '#b9a8ff'].map(c => new THREE.Color(c));
+
+  let meshes = [], cur = null;
+  function build(type) {
+    if (!TYPES[type]) type = TYPE;
+    meshes.forEach(m => { scene.remove(m); m.geometry.dispose(); m.material.dispose(); });
+    cur = TYPES[type];
+    meshes = cur.parts().map(([geo, mat, tinted]) => {
+      const m = new THREE.InstancedMesh(geo, mat, N); m.frustumCulled = false;
+      if (tinted) for (let i = 0; i < N; i++) m.setColorAt(i, tints[(P[i].ph * 997 | 0) % tints.length]);
+      scene.add(m); return m;
+    });
+    picker.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.t === type));
+    try { localStorage.setItem('particles', type); } catch (e) {}
+    if (still) requestAnimationFrame(frame);
   }
-  const sprites = ['#f1ede4', '#f1ede4', '#f1ede4', '#c8ff4d', '#b9a8ff'].map(sprite);
 
   function size() {
-    D = Math.min(devicePixelRatio || 1, 2); W = innerWidth; H = innerHeight;
-    cv.width = W * D; cv.height = H * D;
-    const n = W < 700 ? 1100 : 2600;
-    if (parts.length !== n) parts = Array.from({ length: n }, () => ({
-      x: (Math.random() * 2 - 1) * XR, z: Math.random() * ZR,
-      s: .5 + Math.random() * 1.2, r: Math.random() * 6.28, vr: (Math.random() - .5) * .8,
-      ph: Math.random() * 6.28, a: .45 + Math.random() * .55, k: Math.random() * sprites.length | 0,
-    }));
+    const W = innerWidth, H = innerHeight;
+    renderer.setSize(W, H, false); camera.aspect = W / H; camera.fov = W < H ? 66 : 50; camera.updateProjectionMatrix();
   }
+
+  const o = new THREE.Object3D(), ray = new THREE.Raycaster(), ground = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+  const ndc = new THREE.Vector2(9, 9), hit = new THREE.Vector3(), look = new THREE.Vector3();
+  let t = 0, last = 0, sc = 0, mx = 0, my = 0, hasHit = false;
 
   function frame(now) {
     const dt = Math.min(.05, (now - last) / 1000 || 0); last = now; t += dt;
-    sc += (scrollY / H - sc) * .08; mx += ((px > -1e3 ? px / W - .5 : 0) - mx) * .05;
-    const s = Math.min(sc, 4);
-    const camY = 1.5 + s * .9, hor = H * (.34 - Math.min(s, 1.2) * .22) + my, f = H * .95, drift = t * .55;
-    cv.style.opacity = Math.max(.2, 1 - s * .75);
-    g.setTransform(D, 0, 0, D, 0, 0); g.clearRect(0, 0, W, H);
-    g.globalCompositeOperation = 'lighter';
-    for (const p of parts) {
-      const z = (((p.z - drift) % ZR) + ZR) % ZR + .45;
-      const y = Math.sin(p.x * .55 + t * .6) * .28 + Math.sin(z * .5 + t * .45 + p.ph * .2) * .32;
-      let X = W / 2 + (p.x - mx * 2.2) * f / z, Y = hor + (camY - y) * f / z;
-      if (X < -40 || X > W + 40 || Y > H + 40) continue;
-      const dx = X - px, dy = Y - py, d2 = dx * dx + dy * dy;      // частицы разбегаются от курсора
-      if (d2 < 16900) { const d = Math.sqrt(d2) || 1, k = (130 - d) / 130 * 34; X += dx / d * k; Y += dy / d * k; }
-      const sz = Math.min(46, p.s * f / z * .055);
-      const al = p.a * Math.min(1, (ZR - z) / 7) * Math.min(1, (z - .45) * 1.4) * (.75 + .25 * Math.sin(t * 2 + p.ph));
-      if (al <= .01 || sz < .6) continue;
-      const a = p.r + t * p.vr, c = Math.cos(a) * D, n = Math.sin(a) * D;
-      g.setTransform(c, n, -n, c, X * D, Y * D);
-      g.globalAlpha = al; g.drawImage(sprites[p.k], -sz / 2, -sz / 2, sz, sz);
+    const target = scrollY / innerHeight; sc = still ? target : sc + (target - sc) * .07;
+    const s = Math.min(sc, 3), inside = ndc.x < 2;
+    mx += ((inside ? ndc.x : 0) - mx) * .04; my += ((inside ? ndc.y : 0) - my) * .04;
+    camera.position.set(mx * 1.4, 2.3 + s * 2.4 - my * .35, 6);
+    look.set(mx * .5, .3 - s * 1.2, -5 + s * 1.5); camera.lookAt(look);
+    cv.style.opacity = Math.max(.24, 1 - s * .7);
+
+    hasHit = false;
+    if (inside) { ray.setFromCamera(ndc, camera); hasHit = !!ray.ray.intersectPlane(ground, hit); }
+    const drift = t * .75, R = 2.6;
+    for (let i = 0; i < N; i++) {
+      const p = P[i];
+      let z = ((p.z + drift) % ZL) + Z0, x = p.x;
+      let y = Math.sin(x * .5 + t * .6) * .3 + Math.sin(z * .45 + t * .5 + p.ph * .15) * .35;
+      if (hasHit) {                                   // частицы разлетаются от курсора
+        const dx = x - hit.x, dz = z - hit.z, d = Math.hypot(dx, dz);
+        if (d < R) { const k = (1 - d / R) ** 2, inv = 1 / (d || 1); x += dx * inv * k * 1.6; z += dz * inv * k * 1.6; y += k * 1.1; }
+      }
+      const fade = Math.min(1, (z - Z0) / 5) * Math.min(1, (Z0 + ZL - z) / 1.5);
+      o.position.set(x, y, z);
+      if (cur.upright) o.rotation.set(Math.sin(p.rx) * .5 + Math.sin(t * .9 + p.ph) * .16, p.ry + t * p.vy * .6, Math.sin(p.rz) * .5 + Math.cos(t * .8 + p.ph) * .16);
+      else o.rotation.set(p.rx + t * p.vx, p.ry + t * p.vy, p.rz + t * p.vz);
+      o.scale.setScalar(Math.max(.0001, p.s * cur.size * fade));
+      o.updateMatrix();
+      for (const m of meshes) m.setMatrixAt(i, o.matrix);
     }
-    g.globalAlpha = 1;
+    for (const m of meshes) m.instanceMatrix.needsUpdate = true;
+    renderer.render(scene, camera);
     if (!still) requestAnimationFrame(frame);
   }
 
-  addEventListener('resize', () => { size(); if (still) frame(0); });
-  addEventListener('pointermove', e => { px = e.clientX; py = e.clientY; }, { passive: true });
-  addEventListener('pointerleave', () => { px = py = -1e4; });
-  addEventListener('scroll', () => {
-    $('#top').classList.toggle('solid', scrollY > 40);
-    if (still) { sc = scrollY / innerHeight; frame(0); }
-  }, { passive: true });
-  size(); requestAnimationFrame(frame);
-})();
+  for (const [id, v] of Object.entries(TYPES)) {
+    const b = document.createElement('button'); b.dataset.t = id; b.textContent = v.name;
+    b.onclick = () => build(id); picker.append(b);
+  }
+  addEventListener('resize', () => { size(); if (still) requestAnimationFrame(frame); });
+  addEventListener('pointermove', e => { ndc.set(e.clientX / innerWidth * 2 - 1, -(e.clientY / innerHeight) * 2 + 1); }, { passive: true });
+  document.documentElement.addEventListener('pointerleave', () => ndc.set(9, 9));
+  if (still) addEventListener('scroll', () => requestAnimationFrame(frame), { passive: true });
+
+  let saved = null; try { saved = localStorage.getItem('particles'); } catch (e) {}
+  size(); build(new URLSearchParams(location.search).get('p') || saved || TYPE);
+  if (!still) requestAnimationFrame(frame);
+} catch (e) {
+  console.error(e); picker.remove();
+}
 </script>
 </body>
 </html>
