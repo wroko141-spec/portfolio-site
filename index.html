@@ -29,7 +29,7 @@ h1,h2,h3,.num,.logo{font-family:Tektur,Manrope,sans-serif;font-weight:800;letter
 .no-webgl #field{display:none}
 .no-webgl body{background:radial-gradient(120% 70% at 50% 108%,#1a2330 0,#0b0e15 45%,var(--bg) 75%) fixed var(--bg)}
 section[id]{scroll-margin-top:50px}
-@media(prefers-reduced-motion:no-preference){html:not(.lenis){scroll-behavior:smooth}}
+html:not(.lenis):not(.calm){scroll-behavior:smooth}
 main,header,footer{position:relative;z-index:1}
 
 /* шапка */
@@ -116,7 +116,8 @@ footer{padding:24px var(--pad);text-align:center;color:var(--mute);font-size:12p
 .intro.i0{animation:fade 1s .1s both}.intro.i1{animation-delay:.35s}.intro.i2{animation-delay:.7s}
 .scroll.intro{animation:fade 1s 1.2s both,bob 2s 2.2s ease-in-out infinite}
 #field{animation:fade 1.8s ease both}
-@media(prefers-reduced-motion:reduce){.rv{opacity:1;transform:none;filter:none;transition:none}.intro,.scroll.intro,#field{animation:none}}
+/* класс calm ставится, только если в настройках BG включено respectReducedMotion */
+.calm .rv{opacity:1;transform:none;filter:none;transition:none}.calm .intro,.calm .scroll.intro,.calm #field{animation:none}
 </style>
 </head>
 <body>
@@ -282,7 +283,7 @@ const BG = {
   cameraSpeed: 7,        // сколько камера пролетает вперёд за один экран прокрутки
   rise: 5.4,             // насколько поле уходит вверх при прокрутке (0 - остаётся внизу)
   riseEnd: 1.25,         // за сколько экранов прокрутки поле уходит вверх полностью
-  respectReducedMotion: false, // true - при системной настройке «меньше анимаций» фон застывает
+  respectReducedMotion: false, // true - при системной настройке «меньше анимаций» сайт не анимируется
   mouseParallax: 1,      // сила параллакса от мыши
   dimTo: 0.24,           // яркость поля за следующими секциями (1 - не затемнять)
   dimStart: 0.3,         // с какой доли первого экрана начинается затемнение
@@ -290,17 +291,20 @@ const BG = {
   maxPixelRatio: 1.5,    // потолок чёткости (качество)
   adaptive: true,        // подстраивать качество при долгой просадке FPS (false - никогда не трогать)
   minFps: 30,            // ниже этого FPS (дольше 3 с) качество слегка снижается, но не больше чем до 60% частиц
-  particle: 'flowers',   // форма: flowers | daisy | sakura | sparkle | star | snow | heart | butterfly | crystal | bubble
+  particle: 'flowers',   // форма: flowers | daisy | sakura | sparkle | star | snow | heart | butterfly | crystal | bubble | flare | diamond | burst | cross | hexstar
   dust: 600,             // мини-частицы в небе (0 - выключить)
   glow: 1,               // сила лунного свечения (0 - выключить)
   glowColor: [0.046, 0.037, 0.105], // цвет свечения (R, G, B от 0 до 1)
-  scrollLerp: 0.12,      // инерция прокрутки: больше - резче, меньше - мягче
+  scrollLerp: 0.09,      // инерция прокрутки: больше - резче, меньше - мягче
 };
 /* ============================ */
 
 const root = document.documentElement, header = document.getElementById('top');
-const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-const still = reduced && BG.respectReducedMotion;   // фон застывает только если это разрешено в настройках
+// Системная настройка «меньше анимаций» (в Windows - выключенные «Эффекты анимации») учитывается,
+// только если respectReducedMotion: true. Иначе прокрутка, появление текста и фон анимируются всегда.
+const reduced = BG.respectReducedMotion && matchMedia('(prefers-reduced-motion: reduce)').matches;
+const still = reduced;
+if (reduced) document.documentElement.classList.add('calm');
 const coarse = matchMedia('(pointer: coarse)').matches;
 const mobile = coarse || innerWidth < 760;
 
@@ -482,6 +486,40 @@ const SHAPES = {
       const r = R * (k ? .62 : .84); g.fillStyle = 'rgba(255,255,255,.16)'; g.beginPath(); g.arc(0, 0, r, 0, TAU); g.fill();
       g.strokeStyle = 'rgba(255,255,255,.95)'; g.lineWidth = R * .085; g.stroke();
       g.lineCap = 'round'; g.beginPath(); g.arc(0, 0, r * .66, -2.5, -1.6); g.stroke();
+    } },
+  flare: { name: 'Блики', stems: 0, size: 1.1, tints: [...W3, [.86, .83, 1], [.75, .8, 1]],
+    draw(g, k, R) {
+      const ray = (len, w) => { g.beginPath(); for (const [x, y] of [[0, -len], [w, -w], [len, 0], [w, w], [0, len], [-w, w], [-len, 0], [-w, -w]]) g.lineTo(x, y); g.fill(); };   // тонкие прямые лучи
+      g.fillStyle = '#ffffff'; ray(R, R * .05); if (k) { g.rotate(Math.PI / 4); ray(R * .5, R * .04); g.rotate(-Math.PI / 4); }
+      dot(g, R * .12, '#ffffff', '#dfe4ff');
+    } },
+  diamond: { name: 'Алмазные искры', stems: 0, size: .85, tints: [...W3, [.75, .95, 1], [.8, 1, .92]],
+    draw(g, k, R) {
+      const n = 4, inner = k ? .2 : .3;
+      for (let i = 0; i < n * 2; i++) {            // грани разной яркости
+        const a0 = i / n * Math.PI, a1 = (i + 1) / n * Math.PI, r0 = i % 2 ? R * inner : R, r1 = i % 2 ? R : R * inner;
+        g.fillStyle = ['#ffffff', '#c9d1ee', '#eef1fb', '#aab4dc'][i % 4];
+        g.beginPath(); g.moveTo(0, 0); g.lineTo(Math.sin(a0) * r0, -Math.cos(a0) * r0); g.lineTo(Math.sin(a1) * r1, -Math.cos(a1) * r1); g.fill();
+      }
+    } },
+  burst: { name: 'Вспышки', stems: 0, size: .95, tints: [...W3, [1, .95, .78], [1, .88, .62]],
+    draw(g, k, R) {
+      const n = k ? 12 : 8; g.fillStyle = '#ffffff'; g.beginPath();
+      for (let i = 0; i < n * 2; i++) { const a = i / n * Math.PI, r = i % 2 ? R * .16 : R * (i % 4 ? .62 : 1); g.lineTo(Math.sin(a) * r, -Math.cos(a) * r); }
+      g.closePath(); g.fill(); dot(g, R * .2, '#ffffff', '#fff1c4');
+    } },
+  cross: { name: 'Крестики', stems: 0, size: .7, tints: [...W3, [1, .78, .9], [.85, .8, 1]],
+    draw(g, k, R) {
+      if (k) g.rotate(Math.PI / 4);
+      g.strokeStyle = lin(g, -R, R, '#ffffff', '#d9dcf0'); g.lineCap = 'round'; g.lineWidth = R * (k ? .2 : .26);
+      g.beginPath(); g.moveTo(0, -R * .8); g.lineTo(0, R * .8); g.moveTo(-R * .8, 0); g.lineTo(R * .8, 0); g.stroke();
+    } },
+  hexstar: { name: 'Шестилучевые искры', stems: 0, size: .9, tints: [...W3, [.8, .9, 1], [.9, .82, 1], [1, .9, .96]],
+    draw(g, k, R) {
+      const n = 6, P = i => { const a = i / n * TAU, r = k && i % 2 ? R * .6 : R; return [Math.sin(a) * r, -Math.cos(a) * r]; };
+      const C = i => { const a = (i + .5) / n * TAU; return [Math.sin(a) * R * .13, -Math.cos(a) * R * .13]; };
+      const rg = g.createRadialGradient(0, 0, 0, 0, 0, R); rg.addColorStop(0, '#ffffff'); rg.addColorStop(1, '#d4dcff');
+      g.fillStyle = rg; g.beginPath(); g.moveTo(...P(0)); for (let i = 1; i <= n; i++) g.quadraticCurveTo(...C(i - 1), ...P(i % n)); g.fill();
     } },
 };
 
