@@ -62,30 +62,35 @@ section{padding:clamp(72px,11vw,150px) var(--pad)}
 
 /* работы */
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,320px),1fr));gap:18px}
-.card{display:block;background:#111116;border:1px solid var(--line);border-radius:18px;padding:12px;transition:transform .3s,border-color .3s}
-.card:hover{transform:translateY(-6px);border-color:rgba(200,255,77,.5)}
+.card{position:relative;display:flex;flex-direction:column;background:#111116;border:1px solid var(--line);border-radius:18px;padding:12px;transition:transform .35s,border-color .45s,box-shadow .45s}
+.card::before{content:"";position:absolute;inset:0;border-radius:inherit;background:radial-gradient(90px circle at var(--mx,50%) var(--my,0%),rgba(235,242,255,.14),transparent 70%),radial-gradient(420px circle at var(--mx,50%) var(--my,0%),rgba(170,195,255,.12),transparent 60%);opacity:0;transition:opacity .45s;pointer-events:none;z-index:1}
+.card:hover{transform:translateY(-6px);border-color:rgba(205,220,255,.5);box-shadow:0 0 0 1px rgba(205,220,255,.08),0 0 40px rgba(160,190,255,.16),0 0 110px rgba(140,170,255,.1),inset 0 1px 0 rgba(235,242,255,.25)}
+.card:hover::before{opacity:1}
 .card.hide{display:none}
 .cover{aspect-ratio:16/10;border-radius:10px;overflow:hidden;display:grid;place-items:center;font-family:Unbounded,sans-serif;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:rgba(241,237,228,.45);background-size:cover;background-position:center}
-.cover img,.cover video{width:100%;height:100%;object-fit:cover;display:block}
-.meta{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;padding:16px 6px 6px}
+.cover img,.cover video{width:100%;height:100%;object-fit:cover;display:block;transition:transform .7s cubic-bezier(.2,.7,.2,1)}
+.card:hover .cover img,.card:hover .cover video{transform:scale(1.05)}
+.meta{flex:1;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:16px 6px 6px}
+.meta .arrow{align-self:flex-end}
 .meta small{display:block;color:var(--mute);font-size:11px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
 .meta h3{font-size:17px;font-weight:700;margin-bottom:6px}
 .meta p{color:var(--mute);font-size:13px}
 .arrow{flex:none;width:34px;height:34px;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center;transition:.25s}
-.card:hover .arrow{background:var(--accent);color:#09090c;border-color:var(--accent);transform:rotate(-45deg)}
+.card:hover .arrow{background:radial-gradient(circle at 35% 30%,#fff,#dfe7f7 45%,#b8c6e6);color:#0b0d16;border-color:#e6ecfb;box-shadow:0 0 20px rgba(190,210,255,.45);transform:rotate(-45deg)}
 
 
 /* что я делаю */
 .skills{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));gap:16px}
 .skill{position:relative;overflow:hidden;background:linear-gradient(160deg,#15151d,#0c0c12);border:1px solid var(--line);border-radius:20px;padding:26px 24px 24px;transition:transform .35s,border-color .35s}
-.skill::before{content:"";position:absolute;inset:0;background:radial-gradient(380px circle at var(--mx,50%) var(--my,0%),rgba(200,255,77,.14),transparent 55%);opacity:0;transition:opacity .35s;pointer-events:none}
-.skill:hover{transform:translateY(-6px);border-color:rgba(200,255,77,.45)}
+.skill::before{content:"";position:absolute;inset:0;background:radial-gradient(90px circle at var(--mx,50%) var(--my,0%),rgba(235,242,255,.16),transparent 70%),radial-gradient(420px circle at var(--mx,50%) var(--my,0%),rgba(170,195,255,.13),transparent 60%),linear-gradient(180deg,rgba(210,225,255,.07),transparent 40%);opacity:0;transition:opacity .45s;pointer-events:none}
+.skill{transition:transform .35s,border-color .45s,box-shadow .45s}
+.skill:hover{transform:translateY(-6px);border-color:rgba(205,220,255,.5);box-shadow:0 0 0 1px rgba(205,220,255,.08),0 0 40px rgba(160,190,255,.16),0 0 110px rgba(140,170,255,.1),inset 0 1px 0 rgba(235,242,255,.25)}
 .skill:hover::before{opacity:1}
 .skill>*{position:relative}
 .skill .n{position:absolute;top:24px;right:24px;font:500 12px Unbounded,sans-serif;color:var(--mute)}
 .ico{width:52px;height:52px;border-radius:14px;border:1px solid var(--line);display:grid;place-items:center;margin-bottom:24px;transition:background .35s,color .35s,border-color .35s}
 .ico svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
-.skill:hover .ico{background:var(--accent);color:#09090c;border-color:var(--accent)}
+.skill:hover .ico{background:radial-gradient(circle at 35% 30%,#fff,#dfe7f7 45%,#b8c6e6);color:#0b0d16;border-color:#e6ecfb;box-shadow:0 0 24px rgba(190,210,255,.45)}
 .skill h3{font-size:17px;margin-bottom:10px}
 .skill p{color:var(--mute);font-size:14px;margin-bottom:20px}
 .tags{display:flex;flex-wrap:wrap;gap:6px}
@@ -189,7 +194,7 @@ const DATA = {
   works: [  // img - обложка из папки works; label - текст вместо обложки; url - куда ведёт карточка
     { title: 'Сакартвело', text: 'Сайт грузинского ресторана: меню, вина, бронирование столика.', img: 'works/sakartvelo.jpg', url: 'https://wroko141-spec.github.io/sakartvelo/' },
     { title: 'Пион', text: 'Демо-сайт студии красоты.', img: 'works/pion.jpg', url: 'https://wroko141-spec.github.io/pion/' },
-    { title: 'Парсер hh.ru', text: 'Парсер вакансий hh.ru с фильтрами и выгрузкой в Excel.', label: 'hh.ru → Excel', url: 'https://github.com/wroko141-spec/hh-parser' },
+    { title: 'Парсер hh.ru', text: 'Парсер вакансий hh.ru с фильтрами и выгрузкой в Excel.', img: 'works/hh-parser.jpg', url: 'https://github.com/wroko141-spec/hh-parser' },
   ],
   steps: [
     { title: 'Заявка', text: 'Вы пишете мне.' },
@@ -225,6 +230,10 @@ $('#grid').innerHTML = DATA.works.map((w, i) => {
     <div class="meta"><div><h3>${esc(w.title)}</h3><p>${esc(w.text)}</p></div><span class="arrow">→</span></div>
   </a>`;
 }).join('');
+$('#grid').addEventListener('pointermove', e => {   // лунное свечение за курсором
+  const c = e.target.closest('.card'); if (!c) return;
+  const r = c.getBoundingClientRect(); c.style.setProperty('--mx', e.clientX - r.left + 'px'); c.style.setProperty('--my', e.clientY - r.top + 'px');
+}, { passive: true });
 
 const ICONS = {
   site: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M6.5 6.5h.01M9.5 6.5h.01"/>',
