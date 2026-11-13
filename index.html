@@ -61,7 +61,7 @@ section{padding:clamp(72px,11vw,150px) var(--pad)}
 .label{display:block;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin-bottom:14px}
 
 /* работы */
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,320px),1fr));gap:18px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,440px),1fr));gap:18px}
 .card{position:relative;display:flex;flex-direction:column;background:#111116;border:1px solid var(--line);border-radius:18px;padding:12px;transition:transform .35s,border-color .45s,box-shadow .45s}
 .card::before{content:"";position:absolute;inset:0;border-radius:inherit;background:radial-gradient(90px circle at var(--mx,50%) var(--my,0%),rgba(235,242,255,.14),transparent 70%),radial-gradient(420px circle at var(--mx,50%) var(--my,0%),rgba(170,195,255,.12),transparent 60%);opacity:0;transition:opacity .45s;pointer-events:none;z-index:1}
 .card:hover{transform:translateY(-6px);border-color:rgba(205,220,255,.5);box-shadow:0 0 0 1px rgba(205,220,255,.08),0 0 40px rgba(160,190,255,.16),0 0 110px rgba(140,170,255,.1),inset 0 1px 0 rgba(235,242,255,.25)}
@@ -195,6 +195,7 @@ const DATA = {
     { title: 'Сакартвело', text: 'Сайт грузинского ресторана: меню, вина, бронирование столика.', img: 'works/sakartvelo.jpg', url: 'https://wroko141-spec.github.io/sakartvelo/' },
     { title: 'Пион', text: 'Демо-сайт студии красоты.', img: 'works/pion.jpg', url: 'https://wroko141-spec.github.io/pion/' },
     { title: 'Парсер hh.ru', text: 'Парсер вакансий hh.ru с фильтрами и выгрузкой в Excel.', img: 'works/hh-parser.jpg', url: 'https://github.com/wroko141-spec/hh-parser' },
+    { title: 'HH панель', text: 'Панель вакансий hh.ru: аналитика зарплат и навыков, подборки, сопроводительные письма.', img: 'works/hh-panel.jpg', url: 'https://wroko141-spec.github.io/hh-panel/' },
   ],
   steps: [
     { title: 'Заявка', text: 'Вы пишете мне.' },
