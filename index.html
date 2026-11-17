@@ -192,6 +192,7 @@ const DATA = {
     { icon: 'server', title: 'Хостинг и VPS', text: 'Размещаю проект, настраиваю сервер и слежу, чтобы всё работало.', tags: ['размещение', 'настройка', 'управление'] },
   ],
   works: [  // img - обложка из папки works; label - текст вместо обложки; url - куда ведёт карточка
+    { title: 'Fold and Found — склад', text: 'Складской учёт для магазина одежды: остатки, резервы, приёмка, отгрузки и возвраты. Next.js и PostgreSQL.', img: 'works/fold-and-found.jpg' },
     { title: 'Студия — CRM', text: 'Интерактивное демо CRM: клиенты, сделки, проекты, задачи и ручной учёт оплат. Вымышленные данные, без регистрации.', img: 'works/studio-crm.jpg', url: 'https://studio-crm-demo.edgedelf8.chatgpt.site' },
     { title: 'Сакартвело', text: 'Сайт грузинского ресторана: меню, вина, бронирование столика.', img: 'works/sakartvelo.jpg', url: 'https://wroko141-spec.github.io/sakartvelo/' },
     { title: 'Пион', text: 'Демо-сайт студии красоты.', img: 'works/pion.jpg', url: 'https://wroko141-spec.github.io/pion/' },
@@ -227,10 +228,12 @@ $('#grid').innerHTML = DATA.works.map((w, i) => {
   const media = w.video ? `<video src="${esc(w.video)}" muted loop playsinline autoplay></video>`
     : w.img ? `<img src="${esc(w.img)}" alt="${esc(w.title)}" loading="lazy">`
     : esc(w.label || '');
-  return `<a class="card rv" href="${esc(w.url)}" target="_blank" rel="noopener">
+  const tag = w.url ? 'a' : 'article';
+  const link = w.url ? ` href="${esc(w.url)}" target="_blank" rel="noopener"` : '';
+  return `<${tag} class="card rv"${link}>
     <div class="cover" style="background-image:${covers[i % covers.length]}">${media}</div>
-    <div class="meta"><div><h3>${esc(w.title)}</h3><p>${esc(w.text)}</p></div><span class="arrow">→</span></div>
-  </a>`;
+    <div class="meta"><div><h3>${esc(w.title)}</h3><p>${esc(w.text)}</p></div>${w.url ? '<span class="arrow">→</span>' : ''}</div>
+  </${tag}>`;
 }).join('');
 $('#grid').addEventListener('pointermove', e => {   // лунное свечение за курсором
   const c = e.target.closest('.card'); if (!c) return;
